@@ -37,15 +37,21 @@ public class LocalModScanner {
      */
     public static String findInstalledVersion(ManagedModConfig modConfig) {
         File modsDir = getModsDirectory();
+        LOGGER.info("Scanning for {}: modsDir={}, pattern={}", modConfig.getModId(), modsDir.getAbsolutePath(), modConfig.getJarPattern());
+
         if (!modsDir.exists() || !modsDir.isDirectory()) {
             LOGGER.warn("Mods directory not found: {}", modsDir);
             return null;
         }
 
         List<File> matchingFiles = findMatchingJars(modsDir, modConfig);
+        LOGGER.info("Found {} matching JARs for {}", matchingFiles.size(), modConfig.getModId());
+        for (File f : matchingFiles) {
+            LOGGER.info("  - {}", f.getName());
+        }
 
         if (matchingFiles.isEmpty()) {
-            LOGGER.debug("No JAR found for mod: {}", modConfig.getModId());
+            LOGGER.info("No JAR found for mod: {}", modConfig.getModId());
             return null;
         }
 
@@ -62,12 +68,16 @@ public class LocalModScanner {
             return null;
         }
 
+        LOGGER.info("Extracting version from: {}", newestJar.getName());
+
         // Try to extract version from filename using pattern
         String version = extractVersionFromFilename(newestJar.getName(), modConfig.getJarPattern());
         if (version != null) {
             LOGGER.info("Found {} version {} from filename", modConfig.getModId(), version);
             return version;
         }
+
+        LOGGER.info("Failed to extract version from filename, trying JAR manifest");
 
         // Fallback: try to read from JAR manifest
         version = readVersionFromJar(newestJar);
