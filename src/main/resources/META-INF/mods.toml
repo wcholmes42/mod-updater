@@ -5,7 +5,7 @@ issueTrackerURL="https://github.com/wcholmes42/mod-updater/issues"
 
 [[mods]]
 modId="modupdater"
-version="1.2.24"
+version="1.2.25"
 displayName="Mod Auto-Updater"
 authors="wcholmes42"
 description='''
