@@ -27,7 +27,6 @@ public class UpdaterCommands {
                 .then(Commands.literal("sync")
                     .executes(UpdaterCommands::syncClientMods))
                 .then(Commands.literal("updateserver")
-                    .requires(source -> source.hasPermission(2)) // Requires OP level 2
                     .executes(UpdaterCommands::updateServerMods))
         );
     }
@@ -45,7 +44,7 @@ public class UpdaterCommands {
             return 0;
         }
 
-        source.sendSuccess(() -> Component.literal("[Mod Updater] Sending server config and checking for updates..."), false);
+        source.sendSuccess(() -> Component.literal("[Mod Updater] Pulling server config and checking for updates..."), false);
 
         // Send config to the requesting player's client
         ModUpdater.sendConfigToPlayer(player);
@@ -63,6 +62,12 @@ public class UpdaterCommands {
         // This command only makes sense on the server side
         if (!(source.getEntity() instanceof ServerPlayer)) {
             source.sendFailure(Component.literal("[Mod Updater] The 'updateserver' command is for server operators only. Use '/modupdater sync' on the client."));
+            return 0;
+        }
+
+        // Check if player has OP permissions (level 2 or higher)
+        if (!source.hasPermission(2)) {
+            source.sendFailure(Component.literal("[Mod Updater] You must be a server operator to use this command"));
             return 0;
         }
 
