@@ -2,30 +2,16 @@
   "enabled": true,
   "autoDownload": true,
   "autoInstall": true,
-  "checkOnStartup": true,
-  "checkOnServerJoin": true,
-  "checkIntervalMinutes": 60,
-  "downloadTimeoutSeconds": 30,
-  "verboseLogging": false,
-  "backupOldVersions": false,
   "managedMods": [
     {
       "modId": "landscaper",
       "githubRepo": "wcholmes42/minecraft-landscaper",
-      "jarPattern": "landscaper-{version}.jar",
-      "enabled": true,
-      "minVersion": null,
-      "updateChannel": "latest",
-      "required": false
+      "jarPattern": "landscaper-{version}.jar"
     },
     {
       "modId": "someothermod",
       "githubRepo": "wcholmes42/another-mod",
-      "jarPattern": "anothermod-{version}.jar",
-      "enabled": true,
-      "minVersion": null,
-      "updateChannel": "latest",
-      "required": false
+      "jarPattern": "anothermod-{version}.jar"
     }
   ]
 }

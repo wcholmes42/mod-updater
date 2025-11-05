@@ -1,5 +1,6 @@
 package com.wcholmes.modupdater;
 
+import com.wcholmes.modupdater.commands.UpdaterCommands;
 import com.wcholmes.modupdater.config.ManagedModConfig;
 import com.wcholmes.modupdater.config.UpdaterConfig;
 import com.wcholmes.modupdater.download.DownloadQueue;
@@ -9,6 +10,7 @@ import com.wcholmes.modupdater.ui.UpdateNotifier;
 import com.wcholmes.modupdater.version.ModVersionInfo;
 import com.wcholmes.modupdater.version.VersionChecker;
 import net.minecraftforge.common.MinecraftForge;
+import net.minecraftforge.event.RegisterCommandsEvent;
 import net.minecraftforge.event.entity.player.PlayerEvent;
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
@@ -261,6 +263,15 @@ public class ModUpdater {
 
             UpdaterPackets.sendToPlayer(configPacket, player);
         }
+    }
+
+    /**
+     * Registers commands.
+     */
+    @SubscribeEvent
+    public void onRegisterCommands(RegisterCommandsEvent event) {
+        UpdaterCommands.register(event.getDispatcher());
+        LOGGER.info("Registered /modupdater commands");
     }
 
     /**

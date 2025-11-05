@@ -47,23 +47,17 @@ Edit `config/modupdater.json`:
   "enabled": true,
   "autoDownload": true,
   "autoInstall": true,
-  "checkOnStartup": true,
-  "checkOnServerJoin": true,
-  "checkIntervalMinutes": 60,
-  "downloadTimeoutSeconds": 30,
-  "verboseLogging": false,
-  "backupOldVersions": false,
   "managedMods": [
     {
       "modId": "landscaper",
       "githubRepo": "wcholmes42/minecraft-landscaper",
-      "jarPattern": "landscaper-{version}.jar",
-      "enabled": true,
-      "updateChannel": "latest"
+      "jarPattern": "landscaper-{version}.jar"
     }
   ]
 }
 ```
+
+**Simple!** Just list the mods you want to manage. The updater always gets the latest version from GitHub.
 
 ### Configuration Options
 
@@ -72,24 +66,18 @@ Edit `config/modupdater.json`:
 | `enabled` | Enable/disable the updater | `true` |
 | `autoDownload` | Automatically download updates | `true` |
 | `autoInstall` | Automatically install downloads | `true` |
-| `checkOnStartup` | Check for updates on game start | `true` |
-| `checkOnServerJoin` | Check when joining a server | `true` |
-| `checkIntervalMinutes` | Background check interval | `60` |
-| `downloadTimeoutSeconds` | Download timeout | `30` |
-| `verboseLogging` | Enable debug logging | `false` |
-| `backupOldVersions` | Keep old JAR files | `false` |
 
 ### Managed Mod Configuration
 
-| Field | Description | Required |
-|-------|-------------|----------|
-| `modId` | Forge mod ID | Yes |
-| `githubRepo` | GitHub repo (owner/name) | Yes |
-| `jarPattern` | JAR filename with `{version}` | Yes |
-| `enabled` | Enable updates for this mod | No (default: true) |
-| `minVersion` | Minimum version to maintain | No |
-| `updateChannel` | `"latest"` or `"prerelease"` | No (default: "latest") |
-| `required` | Fail if update fails | No (default: false) |
+Each mod in `managedMods` needs only three fields:
+
+| Field | Description | Example |
+|-------|-------------|---------|
+| `modId` | Forge mod ID | `"landscaper"` |
+| `githubRepo` | GitHub repo (owner/name) | `"wcholmes42/minecraft-landscaper"` |
+| `jarPattern` | JAR filename with `{version}` | `"landscaper-{version}.jar"` |
+
+The updater automatically gets the **latest release** from GitHub.
 
 ## Integration
 
@@ -183,6 +171,36 @@ jar {
     // Produces: landscaper-2.0.0.jar
 }
 ```
+
+## In-Game Commands
+
+The updater provides commands for manual control:
+
+### `/modupdater check`
+
+Manually check for updates from GitHub and download if available.
+
+```
+/modupdater check
+[Mod Updater] Checking for updates...
+[Mod Updater] Updates available for 1 mod(s): landscaper 1.0.0 → 2.0.0
+```
+
+**Use this when:**
+- You want to check for updates immediately
+- Auto-check on startup is disabled
+- You want to force a manual update check
+
+### `/modupdater sync`
+
+Force sync configuration from server (client-side only).
+
+```
+/modupdater sync
+[Mod Updater] Requesting configuration from server...
+```
+
+**Note:** The server automatically pushes configuration when you join, so this command is rarely needed. Use `/modupdater check` to check for updates after joining.
 
 ## API Reference
 
