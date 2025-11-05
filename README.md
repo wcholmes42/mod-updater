@@ -174,33 +174,41 @@ jar {
 
 ## In-Game Commands
 
-The updater provides commands for manual control:
+The updater provides two commands for manual control:
 
-### `/modupdater check`
+### `/modupdater sync` (Client Only)
 
-Manually check for updates from GitHub and download if available.
+Pull latest server configuration and update client mods from GitHub.
 
 ```
-/modupdater check
-[Mod Updater] Checking for updates...
+/modupdater sync
+[Mod Updater] Pulling server config and checking for updates...
 [Mod Updater] Updates available for 1 mod(s): landscaper 1.0.0 → 2.0.0
 ```
 
 **Use this when:**
-- You want to check for updates immediately
-- Auto-check on startup is disabled
-- You want to force a manual update check
+- You want to manually check for mod updates on your client
+- Server operator has updated the mod list
+- You want to force a fresh config pull from the server
 
-### `/modupdater sync`
+**Note:** The server automatically pushes configuration when you join, so this command is typically only needed if the server config changes while you're connected.
 
-Force sync configuration from server (client-side only).
+### `/modupdater updateserver` (Server Only - Requires OP)
+
+Force server to check GitHub and update its mods.
 
 ```
-/modupdater sync
-[Mod Updater] Requesting configuration from server...
+/modupdater updateserver
+[Mod Updater] Checking GitHub for server mod updates...
+[Mod Updater] Server update check complete. Check logs for details.
 ```
 
-**Note:** The server automatically pushes configuration when you join, so this command is rarely needed. Use `/modupdater check` to check for updates after joining.
+**Use this when:**
+- You're a server operator and want to update server mods immediately
+- You don't want to restart the server to trigger auto-update
+- You've just added new mods to the server config
+
+**Note:** This command requires OP level 2 (operator permissions).
 
 ## API Reference
 

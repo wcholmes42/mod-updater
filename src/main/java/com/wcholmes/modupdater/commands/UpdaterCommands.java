@@ -13,8 +13,8 @@ import net.minecraft.server.level.ServerPlayer;
 
 /**
  * Commands for the Mod Updater.
- * /modupdater check - Check for updates and update mods (works on both client and server)
- * /modupdater sync - Pull latest server config, then check for updates (client-only)
+ * /modupdater sync - Client-only: Pull server config and update client mods from GitHub
+ * /modupdater updateserver - Server-only (OP required): Update server mods from GitHub
  */
 public class UpdaterCommands {
 
@@ -24,67 +24,73 @@ public class UpdaterCommands {
     public static void register(CommandDispatcher<CommandSourceStack> dispatcher) {
         dispatcher.register(
             Commands.literal("modupdater")
-                .then(Commands.literal("check")
-                    .executes(UpdaterCommands::checkForUpdates))
                 .then(Commands.literal("sync")
-                    .executes(UpdaterCommands::syncFromServer))
+                    .executes(UpdaterCommands::syncClientMods))
+                .then(Commands.literal("updateserver")
+                    .requires(source -> source.hasPermission(2)) // Requires OP level 2
+                    .executes(UpdaterCommands::updateServerMods))
         );
     }
 
     /**
-     * Handles /modupdater check - Check for updates from GitHub and download.
-     * On server: Updates server-side mods based on server config.
-     * On client: Updates client-side mods based on current config (local or server-provided).
+     * Handles /modupdater sync - Client-only: Pull server config and update client mods from GitHub.
+     * This requests the server's current configuration and automatically checks for updates afterward.
      */
-    private static int checkForUpdates(CommandContext<CommandSourceStack> context) {
+    private static int syncClientMods(CommandContext<CommandSourceStack> context) {
         CommandSourceStack source = context.getSource();
+
+        // This command only makes sense on the client side
+        if (source.getEntity() instanceof ServerPlayer) {
+            // We're on the server - this command doesn't apply
+            source.sendFailure(Component.literal("[Mod Updater] The 'sync' command is for clients only. Use '/modupdater updateserver' to update server mods."));
+            return 0;
+        }
+
+        // Client-side execution
+        if (source.getLevel().isClientSide) {
+            source.sendSuccess(() -> Component.literal("[Mod Updater] Pulling server config and checking for updates..."), false);
+
+            // Send request to server
+            UpdaterPackets.sendToServer(new RequestConfigPacket());
+
+            // Server will respond with config, which triggers automatic update check in ModUpdater.handleServerConfig()
+            return 1;
+        }
+
+        source.sendFailure(Component.literal("[Mod Updater] Not connected to a server"));
+        return 0;
+    }
+
+    /**
+     * Handles /modupdater updateserver - Server-only (OP required): Update server mods from GitHub.
+     * Checks GitHub based on server's config and downloads any available updates.
+     */
+    private static int updateServerMods(CommandContext<CommandSourceStack> context) {
+        CommandSourceStack source = context.getSource();
+
+        // This command only makes sense on the server side
+        if (!(source.getEntity() instanceof ServerPlayer)) {
+            source.sendFailure(Component.literal("[Mod Updater] The 'updateserver' command is for server operators only. Use '/modupdater sync' on the client."));
+            return 0;
+        }
 
         if (!UpdaterConfig.getInstance().isEnabled()) {
             source.sendFailure(Component.literal("[Mod Updater] Updater is disabled in config"));
             return 0;
         }
 
-        String side = source.getEntity() instanceof ServerPlayer ? "server" : "client";
-        source.sendSuccess(() -> Component.literal("[Mod Updater] Checking for updates on " + side + "..."), false);
+        source.sendSuccess(() -> Component.literal("[Mod Updater] Checking GitHub for server mod updates..."), true);
 
         // Run update check asynchronously
         new Thread(() -> {
             try {
                 ModUpdater.checkForUpdates();
+                source.sendSuccess(() -> Component.literal("[Mod Updater] Server update check complete. Check logs for details."), true);
             } catch (Exception e) {
                 source.sendFailure(Component.literal("[Mod Updater] Error checking for updates: " + e.getMessage()));
             }
-        }, "ModUpdater-Check").start();
+        }, "ModUpdater-ServerUpdate").start();
 
         return 1;
-    }
-
-    /**
-     * Handles /modupdater sync - Pull latest config from server, then check for updates (client-only).
-     * This requests the server's current configuration and automatically checks for updates afterward.
-     */
-    private static int syncFromServer(CommandContext<CommandSourceStack> context) {
-        CommandSourceStack source = context.getSource();
-
-        // This command only makes sense on the client side
-        if (source.getEntity() instanceof ServerPlayer) {
-            // We're on the server - this command doesn't apply
-            source.sendFailure(Component.literal("[Mod Updater] The 'sync' command is for clients only. Use '/modupdater check' to update server mods."));
-            return 0;
-        }
-
-        // Client-side execution
-        if (source.getLevel().isClientSide) {
-            source.sendSuccess(() -> Component.literal("[Mod Updater] Requesting configuration from server..."), false);
-
-            // Send request to server
-            UpdaterPackets.sendToServer(new RequestConfigPacket());
-
-            // Server will respond with config, which triggers automatic update check
-            return 1;
-        }
-
-        source.sendFailure(Component.literal("[Mod Updater] Not connected to a server"));
-        return 0;
     }
 }
