@@ -81,6 +81,8 @@ public class UpdaterCommands {
         // Run update check asynchronously
         new Thread(() -> {
             try {
+                // Clear GitHub API cache to ensure fresh data for manual update check
+                ModUpdater.getVersionChecker().clearCache();
                 ModUpdater.checkForUpdates();
                 source.sendSuccess(() -> Component.literal("[Mod Updater] Server update check complete. Check logs for details."), true);
             } catch (Exception e) {

@@ -238,6 +238,8 @@ public class ModUpdater {
 
         // Automatically check for updates after receiving config
         LOGGER.info("Calling checkForUpdates() from handleServerConfig");
+        // Clear GitHub API cache to ensure fresh data for manual sync command
+        versionChecker.clearCache();
         checkForUpdates();
         LOGGER.info("Returned from checkForUpdates()");
     }
@@ -274,7 +276,7 @@ public class ModUpdater {
 
             // Send welcome message showing mod version
             net.minecraft.network.chat.Component message = net.minecraft.network.chat.Component.literal(
-                "[Mod Updater] Server running ModUpdater v1.2.20"
+                "[Mod Updater] Server running ModUpdater v1.2.21"
             ).withStyle(net.minecraft.ChatFormatting.AQUA);
             player.sendSystemMessage(message);
         }
