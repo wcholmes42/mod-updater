@@ -276,7 +276,7 @@ public class ModUpdater {
 
             // Send welcome message showing mod version
             net.minecraft.network.chat.Component message = net.minecraft.network.chat.Component.literal(
-                "[Mod Updater] Server running ModUpdater v1.2.23"
+                "[Mod Updater] Server running ModUpdater v1.2.24"
             ).withStyle(net.minecraft.ChatFormatting.AQUA);
             player.sendSystemMessage(message);
         }
