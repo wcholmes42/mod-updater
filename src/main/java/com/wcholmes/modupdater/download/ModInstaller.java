@@ -115,55 +115,41 @@ public class ModInstaller {
      */
     private static boolean verifyJarSignature(java.util.jar.JarFile jar, String fileName) {
         try {
-            // First check if JAR is signed by looking for CodeSigners without reading entries
-            // This avoids triggering manifest digest verification for unsigned JARs
             boolean isSigned = false;
-            java.util.Enumeration<java.util.jar.JarEntry> checkEntries = jar.entries();
-
-            // Quick check: see if any non-META-INF entry has signatures
-            while (checkEntries.hasMoreElements() && !isSigned) {
-                java.util.jar.JarEntry entry = checkEntries.nextElement();
-                if (!entry.isDirectory() && !entry.getName().startsWith("META-INF/")) {
-                    // Just check for CodeSigners without reading the entry
-                    java.security.CodeSigner[] signers = entry.getCodeSigners();
-                    if (signers != null && signers.length > 0) {
-                        isSigned = true;
-                    }
-                    break; // We only need to check one entry to see if JAR is signed
-                }
-            }
-
-            // If JAR is not signed, skip verification and return early
-            if (!isSigned) {
-                LOGGER.warn("⚠️  JAR is not signed: {} (signatures will be required in future versions)", fileName);
-                return true;  // Change to 'false' to enforce signature requirement
-            }
-
-            // JAR is signed - verify all entries
             boolean allEntriesValid = true;
+            int signedEntries = 0;
+            int totalEntries = 0;
+
             java.util.Enumeration<java.util.jar.JarEntry> entries = jar.entries();
 
             // Read all entries to trigger signature verification
             while (entries.hasMoreElements()) {
                 java.util.jar.JarEntry entry = entries.nextElement();
 
-                // Skip directories and META-INF files
+                // Skip directories and META-INF files (including signature files)
                 if (entry.isDirectory() || entry.getName().startsWith("META-INF/")) {
                     continue;
                 }
 
+                totalEntries++;
+
                 // Read the entry completely to trigger signature verification
+                // This is required for CodeSigners to be populated
                 try (java.io.InputStream is = jar.getInputStream(entry)) {
                     byte[] buffer = new byte[8192];
                     while (is.read(buffer) != -1) {
                         // Reading triggers signature verification in JarFile
                     }
+                } catch (java.security.SignatureException e) {
+                    LOGGER.error("❌ Signature verification failed for entry {}: {}", entry.getName(), e.getMessage());
+                    return false;
                 }
 
-                // Check if this entry has a signature
+                // After reading, check if this entry has a valid signature
                 java.security.CodeSigner[] signers = entry.getCodeSigners();
                 if (signers != null && signers.length > 0) {
                     isSigned = true;
+                    signedEntries++;
 
                     // Verify the signature is from expected signer
                     boolean validSigner = false;
@@ -181,7 +167,7 @@ public class ModInstaller {
                                     dn.contains("CN=wcholmes42") ||
                                     dn.contains("O=wcholmes42")) {
                                     validSigner = true;
-                                    LOGGER.debug("Valid signature found: {}", dn);
+                                    LOGGER.debug("Valid signature found for {}: {}", entry.getName(), dn);
                                     break;
                                 }
                             }
@@ -189,13 +175,13 @@ public class ModInstaller {
                     }
 
                     if (!validSigner) {
-                        LOGGER.error("JAR signature is not from trusted signer: {}", fileName);
+                        LOGGER.error("❌ JAR entry signature is not from trusted signer: {} (entry: {})", fileName, entry.getName());
                         allEntriesValid = false;
                         break;
                     }
                 } else if (isSigned) {
                     // Some entries signed, but this one isn't - JAR has been tampered with
-                    LOGGER.error("JAR has unsigned entries (possible tampering): {}", fileName);
+                    LOGGER.error("❌ JAR has unsigned entries (possible tampering): {} (entry: {})", fileName, entry.getName());
                     allEntriesValid = false;
                     break;
                 }
@@ -203,7 +189,7 @@ public class ModInstaller {
 
             if (isSigned) {
                 if (allEntriesValid) {
-                    LOGGER.info("✅ JAR signature verified: {}", fileName);
+                    LOGGER.info("✅ JAR signature verified: {} ({}/{} entries signed)", fileName, signedEntries, totalEntries);
                     return true;
                 } else {
                     LOGGER.error("❌ JAR signature verification failed: {}", fileName);
@@ -212,13 +198,15 @@ public class ModInstaller {
             } else {
                 // JAR is not signed
                 // For backwards compatibility, allow unsigned JARs with a warning
-                // In the future, you can change this to 'return false' to require signatures
                 LOGGER.warn("⚠️  JAR is not signed: {} (signatures will be required in future versions)", fileName);
                 return true;  // Change to 'false' to enforce signature requirement
             }
 
+        } catch (java.security.SignatureException e) {
+            LOGGER.error("❌ JAR signature verification failed for {}: {}", fileName, e.getMessage());
+            return false;
         } catch (Exception e) {
-            LOGGER.error("JAR signature verification failed for {}: {}", fileName, e.getMessage());
+            LOGGER.error("JAR signature verification error for {}: {}", fileName, e.getMessage());
             return false;
         }
     }

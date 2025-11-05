@@ -74,17 +74,24 @@ jar {
     // Minimize JAR size
     exclude 'META-INF/maven/**'
     exclude '**/package-info.class'
+}
 
-    // Sign JAR if keystore is available (CI/CD or local)
+// Sign the reobfuscated JAR (after Forge Gradle processing)
+task signReobfJar {
+    dependsOn reobfJar
+
     doLast {
         def keystorePath = project.findProperty('signing.keystore') ?: System.getenv('SIGNING_KEYSTORE')
         def keystorePassword = project.findProperty('signing.password') ?: System.getenv('SIGNING_PASSWORD')
         def keyAlias = project.findProperty('signing.alias') ?: System.getenv('SIGNING_ALIAS') ?: 'modupdater'
 
+        // Get the reobfuscated JAR file
+        def jarFile = reobfJar.output.get().asFile
+
         if (keystorePath && keystorePassword) {
-            println "Signing JAR: ${archiveFile.get().asFile.name}"
+            println "Signing reobfuscated JAR: ${jarFile.name}"
             ant.signjar(
-                jar: archiveFile.get().asFile,
+                jar: jarFile,
                 alias: keyAlias,
                 keystore: keystorePath,
                 storepass: keystorePassword,
@@ -99,3 +106,6 @@ jar {
         }
     }
 }
+
+// Make build task depend on signing
+build.dependsOn signReobfJar

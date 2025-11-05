@@ -4,7 +4,13 @@
       "Bash(cmd.exe /c \"taskkill /F /IM java.exe\")",
       "Bash(timeout /T 90 java:*)",
       "Read(//d/code/minecraft/TestServer/**)",
-      "Bash(./gradlew clean build:*)"
+      "Bash(./gradlew clean build:*)",
+      "Bash(gh release create:*)",
+      "Bash(gh run list:*)",
+      "Bash(gh release view:*)",
+      "Bash(chmod:*)",
+      "Bash(gh release download:*)",
+      "Bash(jarsigner:*)"
     ],
     "deny": [],
     "ask": []
