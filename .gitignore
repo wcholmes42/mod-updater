@@ -32,3 +32,4 @@ bin/
 *.pfx
 keystore.b64
 gradle.properties
+test-download.jar
