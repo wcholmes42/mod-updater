@@ -44,6 +44,7 @@ public class ModVersionInfo {
         String target = getTargetVersion();
 
         if (target == null || localVersion == null) {
+            System.out.println("[ModVersionInfo] " + modId + ": checkForUpdate() - target=" + target + ", local=" + localVersion + " -> updateAvailable=false (null check)");
             updateAvailable = false;
             return;
         }
@@ -52,9 +53,11 @@ public class ModVersionInfo {
             SemanticVersion targetVer = SemanticVersion.parse(target);
             SemanticVersion localVer = SemanticVersion.parse(localVersion);
             updateAvailable = targetVer.isGreaterThan(localVer);
+            System.out.println("[ModVersionInfo] " + modId + ": checkForUpdate() - target=" + target + ", local=" + localVersion + " -> updateAvailable=" + updateAvailable + " (semantic)");
         } catch (IllegalArgumentException e) {
             // If version parsing fails, do string comparison
             updateAvailable = !target.equals(localVersion);
+            System.out.println("[ModVersionInfo] " + modId + ": checkForUpdate() - target=" + target + ", local=" + localVersion + " -> updateAvailable=" + updateAvailable + " (string compare, parse failed: " + e.getMessage() + ")");
         }
     }
 

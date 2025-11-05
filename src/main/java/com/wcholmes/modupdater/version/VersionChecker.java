@@ -64,6 +64,7 @@ public class VersionChecker {
 
         // Get local version
         String localVersion = LocalModScanner.findInstalledVersion(modConfig);
+        LOGGER.info("Detected local version for {}: {}", modId, localVersion != null ? localVersion : "NOT FOUND");
         info.setLocalVersion(localVersion);
 
         // Get GitHub version
@@ -72,13 +73,17 @@ public class VersionChecker {
                 .thenAccept(release -> {
                     if (release != null) {
                         String githubVersion = release.getVersion();
+                        LOGGER.info("GitHub version for {}: {}", modId, githubVersion);
                         info.setGithubVersion(githubVersion);
+
+                        LOGGER.info("Version comparison for {}: local={}, github={}, updateAvailable={}",
+                                   modId, localVersion, githubVersion, info.isUpdateAvailable());
 
                         // Find matching asset
                         Release.Asset asset = release.findAsset(modConfig.getJarPattern());
                         if (asset != null) {
                             info.setDownloadUrl(asset.getBrowserDownloadUrl());
-                            LOGGER.debug("Found asset for {}: {} ({})", modId, asset.getName(), asset.getSize());
+                            LOGGER.info("Found asset for {}: {} ({})", modId, asset.getName(), asset.getSize());
                         } else {
                             LOGGER.warn("No matching asset found for {} with pattern {}",
                                     modId, modConfig.getJarPattern());
