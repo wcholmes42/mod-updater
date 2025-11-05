@@ -3,9 +3,9 @@ package com.wcholmes.modupdater.ui;
 import com.wcholmes.modupdater.download.DownloadQueue;
 import com.wcholmes.modupdater.version.ModVersionInfo;
 import net.minecraft.ChatFormatting;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.network.chat.Component;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.fml.loading.FMLEnvironment;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -101,19 +101,34 @@ public class UpdateNotifier {
     }
 
     /**
-     * Sends a chat message to the player.
+     * Sends a chat message to the player (client-side only).
      */
     private static void sendMessage(String message, ChatFormatting color) {
-        // Only send to client player
-        Minecraft mc = Minecraft.getInstance();
-        if (mc == null) {
-            return;
+        // Only execute on client side to avoid loading client-only classes on server
+        if (FMLEnvironment.dist == Dist.CLIENT) {
+            sendClientMessage(message, color);
         }
+    }
 
-        LocalPlayer player = mc.player;
-        if (player != null) {
-            Component text = Component.literal(PREFIX + message).withStyle(color);
-            player.displayClientMessage(text, false);
+    /**
+     * Client-side only: sends message to player's chat.
+     * This method is isolated to prevent loading client classes on the server.
+     */
+    private static void sendClientMessage(String message, ChatFormatting color) {
+        try {
+            net.minecraft.client.Minecraft mc = net.minecraft.client.Minecraft.getInstance();
+            if (mc == null) {
+                return;
+            }
+
+            net.minecraft.client.player.LocalPlayer player = mc.player;
+            if (player != null) {
+                Component text = Component.literal(PREFIX + message).withStyle(color);
+                player.displayClientMessage(text, false);
+            }
+        } catch (Exception e) {
+            // Catch any exceptions to prevent crashes
+            LOGGER.warn("Failed to send client message: {}", e.getMessage());
         }
     }
 
