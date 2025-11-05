@@ -1,33 +1,10 @@
 {
   "permissions": {
     "allow": [
-      "Bash(tree:*)",
-      "Bash(where:*)",
-      "Bash(gh repo create:*)",
-      "Bash(gradle wrapper:*)",
-      "Bash(powershell -Command:*)",
-      "Bash(gh run list:*)",
-      "Bash(gh run view:*)",
-      "Bash(gh run watch:*)",
-      "Read(//d/code/**)",
-      "Bash(gh release list:*)",
-      "Bash(gh release view:*)",
-      "Bash(gh release download:*)",
-      "Bash(jarsigner:*)",
-      "Bash(unzip:*)",
-      "Bash(keytool:*)",
-      "Bash(./gradlew build:*)",
-      "Bash(java -jar forge-installer.jar:*)",
-      "Bash(timeout 10 bash:*)",
-      "Bash(cat:*)",
-      "Bash(cmd.exe /c \"run.bat nogui\")",
-      "Bash(java:*)",
-      "Bash(./gradlew clean build:*)",
-      "Bash(gh release create:*)",
-      "Bash(del \"D:\\code\\minecraft\\TestServer\\mods\\modupdater-1.2.7.jar\")",
-      "Bash(taskkill:*)",
-      "Bash(timeout //T 90 java:*)",
-      "Bash(del \"D:\\code\\minecraft\\TestServer\\mods\\modupdater-1.2.16.jar\")"
+      "Bash(cmd.exe /c \"taskkill /F /IM java.exe\")",
+      "Bash(timeout /T 90 java:*)",
+      "Read(//d/code/minecraft/TestServer/**)",
+      "Bash(./gradlew clean build:*)"
     ],
     "deny": [],
     "ask": []
