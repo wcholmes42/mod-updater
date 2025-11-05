@@ -241,6 +241,12 @@ public class ModUpdater {
         if (!event.getEntity().level().isClientSide) {
             net.minecraft.server.level.ServerPlayer player = (net.minecraft.server.level.ServerPlayer) event.getEntity();
             sendConfigToPlayer(player);
+
+            // Send welcome message showing mod version
+            net.minecraft.network.chat.Component message = net.minecraft.network.chat.Component.literal(
+                "[Mod Updater] Server running ModUpdater v1.2.8"
+            ).withStyle(net.minecraft.ChatFormatting.AQUA);
+            player.sendSystemMessage(message);
         }
     }
 
