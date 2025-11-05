@@ -36,7 +36,8 @@ public class UpdaterPackets {
      * Handles the ServerModVersionsPacket on the client.
      */
     private static void handleServerModVersionsPacket(ServerModVersionsPacket packet,
-                                                      net.minecraftforge.network.NetworkEvent.Context ctx) {
+                                                      java.util.function.Supplier<net.minecraftforge.network.NetworkEvent.Context> ctxSupplier) {
+        net.minecraftforge.network.NetworkEvent.Context ctx = ctxSupplier.get();
         ctx.enqueueWork(() -> {
             // Import here to avoid class loading issues
             com.wcholmes.modupdater.ModUpdater.handleServerVersions(packet.getModVersions());
