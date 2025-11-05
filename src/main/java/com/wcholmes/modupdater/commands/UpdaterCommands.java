@@ -33,32 +33,24 @@ public class UpdaterCommands {
     }
 
     /**
-     * Handles /modupdater sync - Client-only: Pull server config and update client mods from GitHub.
-     * This requests the server's current configuration and automatically checks for updates afterward.
+     * Handles /modupdater sync - Client command: Pull server config and update client mods from GitHub.
+     * When a player runs this, the server sends its config to that player's client.
      */
     private static int syncClientMods(CommandContext<CommandSourceStack> context) {
         CommandSourceStack source = context.getSource();
 
-        // This command only makes sense on the client side
-        if (source.getEntity() instanceof ServerPlayer) {
-            // We're on the server - this command doesn't apply
-            source.sendFailure(Component.literal("[Mod Updater] The 'sync' command is for clients only. Use '/modupdater updateserver' to update server mods."));
+        // Must be executed by a player (not console)
+        if (!(source.getEntity() instanceof ServerPlayer player)) {
+            source.sendFailure(Component.literal("[Mod Updater] This command must be executed by a player"));
             return 0;
         }
 
-        // Client-side execution
-        if (source.getLevel().isClientSide) {
-            source.sendSuccess(() -> Component.literal("[Mod Updater] Pulling server config and checking for updates..."), false);
+        source.sendSuccess(() -> Component.literal("[Mod Updater] Sending server config and checking for updates..."), false);
 
-            // Send request to server
-            UpdaterPackets.sendToServer(new RequestConfigPacket());
+        // Send config to the requesting player's client
+        ModUpdater.sendConfigToPlayer(player);
 
-            // Server will respond with config, which triggers automatic update check in ModUpdater.handleServerConfig()
-            return 1;
-        }
-
-        source.sendFailure(Component.literal("[Mod Updater] Not connected to a server"));
-        return 0;
+        return 1;
     }
 
     /**
