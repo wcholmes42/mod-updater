@@ -115,8 +115,31 @@ public class ModInstaller {
      */
     private static boolean verifyJarSignature(java.util.jar.JarFile jar, String fileName) {
         try {
-            // Check if JAR is signed
+            // First check if JAR is signed by looking for CodeSigners without reading entries
+            // This avoids triggering manifest digest verification for unsigned JARs
             boolean isSigned = false;
+            java.util.Enumeration<java.util.jar.JarEntry> checkEntries = jar.entries();
+
+            // Quick check: see if any non-META-INF entry has signatures
+            while (checkEntries.hasMoreElements() && !isSigned) {
+                java.util.jar.JarEntry entry = checkEntries.nextElement();
+                if (!entry.isDirectory() && !entry.getName().startsWith("META-INF/")) {
+                    // Just check for CodeSigners without reading the entry
+                    java.security.CodeSigner[] signers = entry.getCodeSigners();
+                    if (signers != null && signers.length > 0) {
+                        isSigned = true;
+                    }
+                    break; // We only need to check one entry to see if JAR is signed
+                }
+            }
+
+            // If JAR is not signed, skip verification and return early
+            if (!isSigned) {
+                LOGGER.warn("⚠️  JAR is not signed: {} (signatures will be required in future versions)", fileName);
+                return true;  // Change to 'false' to enforce signature requirement
+            }
+
+            // JAR is signed - verify all entries
             boolean allEntriesValid = true;
             java.util.Enumeration<java.util.jar.JarEntry> entries = jar.entries();
 
