@@ -2,6 +2,7 @@ package com.wcholmes.modupdater.github;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
+import com.wcholmes.modupdater.util.GsonProvider;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -17,7 +18,7 @@ import java.util.concurrent.CompletableFuture;
  */
 public class GitHubAPI {
     private static final Logger LOGGER = LogManager.getLogger();
-    private static final Gson GSON = new Gson();
+    private static final Gson GSON = GsonProvider.getGson();
     private static final String API_BASE = "https://api.github.com";
     private static final int TIMEOUT_MS = 10000; // 10 seconds
 

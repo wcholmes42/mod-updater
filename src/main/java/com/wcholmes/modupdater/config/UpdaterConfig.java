@@ -1,8 +1,8 @@
 package com.wcholmes.modupdater.config;
 
 import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
 import com.google.gson.JsonSyntaxException;
+import com.wcholmes.modupdater.util.GsonProvider;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -19,7 +19,7 @@ import java.util.List;
  */
 public class UpdaterConfig {
     private static final Logger LOGGER = LogManager.getLogger();
-    private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
+    private static final Gson GSON = GsonProvider.getGson();
     private static final String CONFIG_FILE = "config/modupdater.json";
 
     // Configuration fields
