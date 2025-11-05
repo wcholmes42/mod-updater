@@ -25,7 +25,9 @@
       "Bash(./gradlew clean build:*)",
       "Bash(gh release create:*)",
       "Bash(del \"D:\\code\\minecraft\\TestServer\\mods\\modupdater-1.2.7.jar\")",
-      "Bash(taskkill:*)"
+      "Bash(taskkill:*)",
+      "Bash(timeout //T 90 java:*)",
+      "Bash(del \"D:\\code\\minecraft\\TestServer\\mods\\modupdater-1.2.16.jar\")"
     ],
     "deny": [],
     "ask": []
