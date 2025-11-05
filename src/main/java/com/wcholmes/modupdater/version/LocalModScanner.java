@@ -121,7 +121,7 @@ public class LocalModScanner {
      */
     private static Pattern createPatternFromJarPattern(String jarPattern) {
         // Escape special regex characters except {version}
-        String regex = Pattern.quote(jarPattern).replace("\\{version\\}", "\\E(.*)\\Q");
+        String regex = Pattern.quote(jarPattern).replace("{version}", "\\E(.*)\\Q");
         // Remove trailing \Q\E if present
         regex = regex.replaceAll("\\\\Q\\\\E$", "");
         LOGGER.info("Created regex pattern from '{}': '{}'", jarPattern, regex);
