@@ -73,6 +73,21 @@ public class ModUpdater {
 
         // Initialize registry
         ModRegistry.getInstance();
+
+        // Check for updates on startup (deferred to avoid blocking server start)
+        event.enqueueWork(() -> {
+            new Thread(() -> {
+                try {
+                    Thread.sleep(5000); // Wait 5 seconds for server to fully start
+                    if (config.isEnabled()) {
+                        LOGGER.info("Checking for updates on startup...");
+                        checkForUpdates();
+                    }
+                } catch (InterruptedException e) {
+                    LOGGER.error("Startup update check interrupted", e);
+                }
+            }, "ModUpdater-StartupCheck").start();
+        });
     }
 
     /**
@@ -244,7 +259,7 @@ public class ModUpdater {
 
             // Send welcome message showing mod version
             net.minecraft.network.chat.Component message = net.minecraft.network.chat.Component.literal(
-                "[Mod Updater] Server running ModUpdater v1.2.8"
+                "[Mod Updater] Server running ModUpdater v1.2.9"
             ).withStyle(net.minecraft.ChatFormatting.AQUA);
             player.sendSystemMessage(message);
         }
