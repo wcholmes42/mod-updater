@@ -77,35 +77,37 @@ jar {
 }
 
 // Sign the reobfuscated JAR (after Forge Gradle processing)
-task signReobfJar {
-    dependsOn reobfJar
+afterEvaluate {
+    task signReobfJar {
+        dependsOn tasks.named('reobfJar')
 
-    doLast {
-        def keystorePath = project.findProperty('signing.keystore') ?: System.getenv('SIGNING_KEYSTORE')
-        def keystorePassword = project.findProperty('signing.password') ?: System.getenv('SIGNING_PASSWORD')
-        def keyAlias = project.findProperty('signing.alias') ?: System.getenv('SIGNING_ALIAS') ?: 'modupdater'
+        doLast {
+            def keystorePath = project.findProperty('signing.keystore') ?: System.getenv('SIGNING_KEYSTORE')
+            def keystorePassword = project.findProperty('signing.password') ?: System.getenv('SIGNING_PASSWORD')
+            def keyAlias = project.findProperty('signing.alias') ?: System.getenv('SIGNING_ALIAS') ?: 'modupdater'
 
-        // Get the reobfuscated JAR file
-        def jarFile = reobfJar.output.get().asFile
+            // Get the reobfuscated JAR file from build/libs
+            def jarFile = file("build/libs/${project.archivesBaseName}-${project.version}.jar")
 
-        if (keystorePath && keystorePassword) {
-            println "Signing reobfuscated JAR: ${jarFile.name}"
-            ant.signjar(
-                jar: jarFile,
-                alias: keyAlias,
-                keystore: keystorePath,
-                storepass: keystorePassword,
-                preservelastmodified: 'true',
-                verbose: true
-            )
-            println "JAR signed successfully"
-        } else {
-            println "WARNING: JAR signing skipped (no keystore configured)"
-            println "For CI/CD, set SIGNING_KEYSTORE, SIGNING_PASSWORD, SIGNING_ALIAS"
-            println "For local dev, add to gradle.properties (don't commit!)"
+            if (keystorePath && keystorePassword) {
+                println "Signing reobfuscated JAR: ${jarFile.name}"
+                ant.signjar(
+                    jar: jarFile,
+                    alias: keyAlias,
+                    keystore: keystorePath,
+                    storepass: keystorePassword,
+                    preservelastmodified: 'true',
+                    verbose: true
+                )
+                println "JAR signed successfully"
+            } else {
+                println "WARNING: JAR signing skipped (no keystore configured)"
+                println "For CI/CD, set SIGNING_KEYSTORE, SIGNING_PASSWORD, SIGNING_ALIAS"
+                println "For local dev, add to gradle.properties (don't commit!)"
+            }
         }
     }
-}
 
-// Make build task depend on signing
-build.dependsOn signReobfJar
+    // Make build task depend on signing
+    build.dependsOn signReobfJar
+}
