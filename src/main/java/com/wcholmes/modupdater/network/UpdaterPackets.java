@@ -36,6 +36,12 @@ public class UpdaterPackets {
                 .decoder(ServerConfigPacket::decode)
                 .consumerMainThread(UpdaterPackets::handleServerConfigPacket)
                 .add();
+
+        CHANNEL.messageBuilder(RequestConfigPacket.class, packetId++, NetworkDirection.PLAY_TO_SERVER)
+                .encoder(RequestConfigPacket::encode)
+                .decoder(RequestConfigPacket::decode)
+                .consumerMainThread(UpdaterPackets::handleRequestConfigPacket)
+                .add();
     }
 
     /**
@@ -76,5 +82,27 @@ public class UpdaterPackets {
      */
     public static void sendToPlayer(ServerConfigPacket packet, ServerPlayer player) {
         CHANNEL.send(PacketDistributor.PLAYER.with(() -> player), packet);
+    }
+
+    /**
+     * Handles the RequestConfigPacket on the server.
+     */
+    private static void handleRequestConfigPacket(RequestConfigPacket packet,
+                                                  java.util.function.Supplier<net.minecraftforge.network.NetworkEvent.Context> ctxSupplier) {
+        net.minecraftforge.network.NetworkEvent.Context ctx = ctxSupplier.get();
+        ctx.enqueueWork(() -> {
+            ServerPlayer player = ctx.getSender();
+            if (player != null) {
+                com.wcholmes.modupdater.ModUpdater.sendConfigToPlayer(player);
+            }
+        });
+        ctx.setPacketHandled(true);
+    }
+
+    /**
+     * Sends a packet from client to server.
+     */
+    public static void sendToServer(RequestConfigPacket packet) {
+        CHANNEL.sendToServer(packet);
     }
 }
