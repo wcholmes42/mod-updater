@@ -35,16 +35,25 @@ jobs:
         run: |
           echo "Decoding keystore..."
           echo "$KEYSTORE_BASE64" | base64 -d > keystore.jks
-          echo "Keystore decoded successfully"
+          ls -lh keystore.jks
+          echo "Keystore file size: $(wc -c < keystore.jks) bytes"
+
+      - name: Verify keystore
+        env:
+          SIGNING_PASSWORD: ${{ secrets.SIGNING_PASSWORD }}
+          SIGNING_ALIAS: ${{ secrets.SIGNING_ALIAS }}
+        run: |
+          echo "Testing keystore..."
+          keytool -list -keystore keystore.jks -storepass "$SIGNING_PASSWORD" -alias "$SIGNING_ALIAS" || echo "Keystore test failed!"
 
       - name: Build and sign JAR
         env:
-          SIGNING_KEYSTORE: keystore.jks
+          SIGNING_KEYSTORE: ${{ github.workspace }}/keystore.jks
           SIGNING_PASSWORD: ${{ secrets.SIGNING_PASSWORD }}
           SIGNING_ALIAS: ${{ secrets.SIGNING_ALIAS }}
         run: |
           chmod +x gradlew
-          ./gradlew build --no-daemon
+          ./gradlew build --no-daemon --stacktrace
           echo "Build completed"
 
       - name: Verify JAR signature
