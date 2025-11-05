@@ -144,13 +144,16 @@ public class ModUpdater {
      * Checks for updates for all managed mods.
      */
     public static void checkForUpdates() {
+        LOGGER.info("checkForUpdates() called");
         UpdaterConfig config = UpdaterConfig.getInstance();
 
         if (!config.isEnabled()) {
+            LOGGER.info("Config is not enabled, skipping update check");
             return;
         }
 
         List<ManagedModConfig> enabledMods = ModRegistry.getInstance().getEnabledMods();
+        LOGGER.info("Found {} enabled mods to check", enabledMods.size());
         if (enabledMods.isEmpty()) {
             LOGGER.info("No enabled mods to check for updates");
             return;
@@ -158,18 +161,24 @@ public class ModUpdater {
 
         UpdateNotifier.notifyCheckingUpdates(enabledMods.size());
 
+        LOGGER.info("Starting async version check");
         versionChecker.checkForUpdates().thenAccept(versionInfo -> {
+            LOGGER.info("Version check completed, processing results");
             List<ModVersionInfo> updates = versionChecker.getModsWithUpdates();
+            LOGGER.info("Found {} mods with updates available", updates.size());
 
             if (updates.isEmpty()) {
+                LOGGER.info("No updates available, notifying user");
                 UpdateNotifier.notifyNoUpdates();
                 return;
             }
 
+            LOGGER.info("Notifying user of available updates");
             UpdateNotifier.notifyUpdatesAvailable(updates);
 
             // Queue downloads if auto-download is enabled
             if (config.isAutoDownload()) {
+                LOGGER.info("Auto-download enabled, queueing downloads");
                 queueDownloads(updates);
             }
         }).exceptionally(ex -> {
@@ -208,10 +217,13 @@ public class ModUpdater {
      * Called by the network packet handler.
      */
     public static void handleServerConfig(com.wcholmes.modupdater.network.ServerConfigPacket packet) {
+        LOGGER.info("handleServerConfig() called");
         LOGGER.info("Received full configuration from server: {} managed mods", packet.getManagedMods().size());
 
         // Apply server config
         UpdaterConfig config = UpdaterConfig.getInstance();
+        LOGGER.info("Applying server config - autoDownload: {}, autoInstall: {}",
+                   packet.isAutoDownload(), packet.isAutoInstall());
         config.applyServerConfig(
             packet.getManagedMods(),
             packet.isAutoDownload(),
@@ -221,10 +233,13 @@ public class ModUpdater {
         );
 
         // Reload the mod registry with new config
+        LOGGER.info("Reloading mod registry");
         ModRegistry.getInstance().reload();
 
         // Automatically check for updates after receiving config
+        LOGGER.info("Calling checkForUpdates() from handleServerConfig");
         checkForUpdates();
+        LOGGER.info("Returned from checkForUpdates()");
     }
 
     /**
@@ -259,7 +274,7 @@ public class ModUpdater {
 
             // Send welcome message showing mod version
             net.minecraft.network.chat.Component message = net.minecraft.network.chat.Component.literal(
-                "[Mod Updater] Server running ModUpdater v1.2.9"
+                "[Mod Updater] Server running ModUpdater v1.2.10"
             ).withStyle(net.minecraft.ChatFormatting.AQUA);
             player.sendSystemMessage(message);
         }
