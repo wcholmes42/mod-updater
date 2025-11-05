@@ -1,0 +1,28 @@
+modLoader="javafml"
+loaderVersion="[47,)"
+license="MIT"
+issueTrackerURL="https://github.com/wcholmes42/mod-updater/issues"
+
+[[mods]]
+modId="modupdater"
+version="1.0.0"
+displayName="Mod Auto-Updater"
+authors="wcholmes42"
+description='''
+Generic automatic updater framework for mods. Handles zero-touch updates from GitHub releases for any registered mod.
+'''
+displayTest="IGNORE_ALL_VERSION"
+
+[[dependencies.modupdater]]
+    modId="forge"
+    mandatory=true
+    versionRange="[47,)"
+    ordering="NONE"
+    side="BOTH"
+
+[[dependencies.modupdater]]
+    modId="minecraft"
+    mandatory=true
+    versionRange="[1.20.1,1.21)"
+    ordering="NONE"
+    side="BOTH"

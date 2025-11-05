@@ -1,0 +1,101 @@
+plugins {
+    id 'eclipse'
+    id 'idea'
+    id 'maven-publish'
+    id 'net.minecraftforge.gradle' version '[6.0,6.2)'
+}
+
+version = '1.0.0'
+group = 'com.wcholmes.modupdater'
+
+base {
+    archivesName = 'modupdater'
+}
+
+java.toolchain.languageVersion = JavaLanguageVersion.of(17)
+
+minecraft {
+    mappings channel: 'official', version: '1.20.1'
+
+    runs {
+        client {
+            workingDirectory project.file('run')
+            property 'forge.logging.markers', 'REGISTRIES'
+            property 'forge.logging.console.level', 'debug'
+            property 'forge.enabledGameTestNamespaces', 'modupdater'
+            mods {
+                modupdater {
+                    source sourceSets.main
+                }
+            }
+        }
+
+        server {
+            workingDirectory project.file('run')
+            property 'forge.logging.markers', 'REGISTRIES'
+            property 'forge.logging.console.level', 'debug'
+            property 'forge.enabledGameTestNamespaces', 'modupdater'
+            mods {
+                modupdater {
+                    source sourceSets.main
+                }
+            }
+        }
+    }
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    minecraft 'net.minecraftforge:forge:1.20.1-47.3.0'
+
+    // Gson for JSON parsing (already included in Minecraft, but explicit for clarity)
+    compileOnly 'com.google.code.gson:gson:2.10.1'
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
+}
+
+jar {
+    manifest {
+        attributes([
+            "Specification-Title": "modupdater",
+            "Specification-Vendor": "wcholmes42",
+            "Specification-Version": "1",
+            "Implementation-Title": project.name,
+            "Implementation-Version": project.jar.archiveVersion,
+            "Implementation-Vendor": "wcholmes42"
+        ])
+    }
+
+    // Minimize JAR size
+    exclude 'META-INF/maven/**'
+    exclude '**/package-info.class'
+
+    // Sign JAR if keystore is available (CI/CD or local)
+    doLast {
+        def keystorePath = project.findProperty('signing.keystore') ?: System.getenv('SIGNING_KEYSTORE')
+        def keystorePassword = project.findProperty('signing.password') ?: System.getenv('SIGNING_PASSWORD')
+        def keyAlias = project.findProperty('signing.alias') ?: System.getenv('SIGNING_ALIAS') ?: 'modupdater'
+
+        if (keystorePath && keystorePassword) {
+            println "Signing JAR: ${archiveFile.get().asFile.name}"
+            ant.signjar(
+                jar: archiveFile.get().asFile,
+                alias: keyAlias,
+                keystore: keystorePath,
+                storepass: keystorePassword,
+                preservelastmodified: 'true',
+                verbose: true
+            )
+            println "JAR signed successfully"
+        } else {
+            println "WARNING: JAR signing skipped (no keystore configured)"
+            println "For CI/CD, set SIGNING_KEYSTORE, SIGNING_PASSWORD, SIGNING_ALIAS"
+            println "For local dev, add to gradle.properties (don't commit!)"
+        }
+    }
+}
