@@ -99,11 +99,15 @@ public class LocalModScanner {
 
         File[] files = modsDir.listFiles((dir, name) -> name.endsWith(".jar"));
         if (files == null) {
+            LOGGER.info("No files found in directory");
             return matches;
         }
 
+        LOGGER.info("Checking {} JAR files against pattern: {}", files.length, pattern.pattern());
         for (File file : files) {
-            if (pattern.matcher(file.getName()).matches()) {
+            boolean matched = pattern.matcher(file.getName()).matches();
+            LOGGER.info("  {} - {}", file.getName(), matched ? "MATCH" : "no match");
+            if (matched) {
                 matches.add(file);
             }
         }
@@ -120,6 +124,7 @@ public class LocalModScanner {
         String regex = Pattern.quote(jarPattern).replace("\\{version\\}", "\\E(.*)\\Q");
         // Remove trailing \Q\E if present
         regex = regex.replaceAll("\\\\Q\\\\E$", "");
+        LOGGER.info("Created regex pattern from '{}': '{}'", jarPattern, regex);
         return Pattern.compile(regex);
     }
 
