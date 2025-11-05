@@ -187,6 +187,32 @@ public class ModUpdater {
     }
 
     /**
+     * Handles server configuration sent to the client (drop-and-go mode).
+     * Called by the network packet handler.
+     */
+    public static void handleServerConfig(com.wcholmes.modupdater.network.ServerConfigPacket packet) {
+        LOGGER.info("Received full configuration from server: {} managed mods", packet.getManagedMods().size());
+
+        // Apply server config
+        UpdaterConfig config = UpdaterConfig.getInstance();
+        config.applyServerConfig(
+            packet.getManagedMods(),
+            packet.isAutoDownload(),
+            packet.isAutoInstall(),
+            packet.getCheckIntervalMinutes(),
+            packet.getDownloadTimeoutSeconds()
+        );
+
+        // Reload the mod registry with new config
+        ModRegistry.getInstance().reload();
+
+        // Check for updates with server config
+        if (config.isCheckOnServerJoin()) {
+            checkForUpdates();
+        }
+    }
+
+    /**
      * Handles server version requirements sent to the client.
      * Called by the network packet handler.
      */
@@ -204,6 +230,36 @@ public class ModUpdater {
             if (UpdaterConfig.getInstance().isAutoDownload()) {
                 queueDownloads(updates);
             }
+        }
+    }
+
+    /**
+     * Handles player login on server - sends configuration to the client.
+     */
+    @SubscribeEvent
+    public void onPlayerLogin(PlayerEvent.PlayerLoggedInEvent event) {
+        if (!event.getEntity().level().isClientSide) {
+            // Server side - send config to client
+            UpdaterConfig config = UpdaterConfig.getInstance();
+
+            if (!config.isEnabled()) {
+                return;
+            }
+
+            net.minecraft.server.level.ServerPlayer player = (net.minecraft.server.level.ServerPlayer) event.getEntity();
+            LOGGER.info("Sending configuration to player: {}", player.getName().getString());
+
+            // Send full configuration
+            com.wcholmes.modupdater.network.ServerConfigPacket configPacket =
+                new com.wcholmes.modupdater.network.ServerConfigPacket(
+                    config.getManagedMods(),
+                    config.isAutoDownload(),
+                    config.isAutoInstall(),
+                    config.getCheckIntervalMinutes(),
+                    config.getDownloadTimeoutSeconds()
+                );
+
+            UpdaterPackets.sendToPlayer(configPacket, player);
         }
     }
 

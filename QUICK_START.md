@@ -69,9 +69,22 @@ GitHub Actions automatically:
 
 ## Client Setup (Users)
 
-### Install Updater
+### Drop-and-Go Mode (Recommended)
 
-1. Download `modupdater-1.0.0.jar` from releases
+**For clients connecting to a server with the updater:**
+
+1. Download `modupdater-x.x.x.jar` from releases
+2. Place in `mods/` folder
+3. Launch Minecraft and connect to your server
+4. **That's it!** The server automatically sends the configuration
+
+No config file needed. The server operator controls everything!
+
+### Standalone Mode (Advanced)
+
+**For standalone clients or manual configuration:**
+
+1. Download `modupdater-x.x.x.jar` from releases
 2. Place in `mods/` folder
 3. Create `config/modupdater.json`:
 
@@ -186,17 +199,19 @@ Prompt restart
 Play with latest version!
 ```
 
-**Server Sync (Optional):**
+**Server Sync (Automatic):**
 ```
 Player joins server
    ↓
-Server sends: "I need landscaper v2.0.0"
+Server sends: Full configuration + version requirements
    ↓
-Client checks local version
+Client applies server configuration
    ↓
-If mismatch → Download v2.0.0
+Client checks for updates based on server config
    ↓
-Everyone on same version!
+If update needed → Download and install
+   ↓
+Everyone on same version with same settings!
 ```
 
 ---

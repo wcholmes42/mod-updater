@@ -4,25 +4,41 @@ A generic zero-touch auto-updater framework for Minecraft Forge 1.20.1 mods. Des
 
 ## Features
 
+- **Drop-and-Go for Clients**: No configuration needed on clients - server pushes all settings automatically
 - **Multi-Mod Support**: Manages updates for any number of mods from different GitHub repos
 - **Zero-Touch Updates**: Automatic download and installation with no user interaction required
-- **Server Version Sync**: Server can tell clients which mod versions are required
+- **Server-Controlled Configuration**: Server operator manages all update settings for connected clients
 - **Parallel Downloads**: Downloads multiple mods concurrently for faster updates
-- **Flexible Configuration**: Configure via JSON file or programmatic API
+- **Flexible Configuration**: Configure via JSON file or programmatic API (server-side only)
 - **Pattern-Based JAR Naming**: Supports any JAR filename pattern
 - **Minimal Footprint**: < 75KB, no external dependencies
 - **GitHub Release Integration**: Works directly with GitHub releases API
 
 ## Installation
 
-1. Download the latest `modupdater-1.0.0.jar` from releases
+### Drop-and-Go Mode (Recommended for Clients)
+
+**For clients connecting to a server:**
+1. Download the latest `modupdater-x.x.x.jar` from releases
 2. Place in your `mods/` folder
-3. On first launch, a default config will be created at `config/modupdater.json`
-4. Configure your mods (see Configuration section)
+3. **That's it!** The server will push the configuration automatically
+
+The server operator controls all update settings, making deployment effortless for clients.
+
+### Server Installation
+
+**For servers or standalone clients:**
+1. Download the latest `modupdater-x.x.x.jar` from releases
+2. Place in your `mods/` folder
+3. On first launch, a config file will be created at `config/modupdater.json`
+4. Configure your managed mods (see Configuration section)
+5. When players connect, they'll receive your configuration automatically
 
 ## Configuration
 
-### Basic Configuration
+**Note:** Configuration is only required on the server or for standalone clients. Clients connecting to a server will receive the configuration automatically.
+
+### Basic Configuration (Server-Side)
 
 Edit `config/modupdater.json`:
 

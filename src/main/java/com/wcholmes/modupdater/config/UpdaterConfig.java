@@ -37,6 +37,9 @@ public class UpdaterConfig {
     // Singleton instance
     private static UpdaterConfig instance;
 
+    // Flag indicating if this config was received from server (transient = not saved to JSON)
+    private transient boolean serverProvided = false;
+
     // Private constructor
     private UpdaterConfig() {}
 
@@ -52,16 +55,16 @@ public class UpdaterConfig {
     }
 
     /**
-     * Loads the configuration from disk, or creates a default if it doesn't exist.
+     * Loads the configuration from disk, or creates a minimal default if it doesn't exist.
+     * On clients, config file is optional - server will push config when player joins.
      * @return the loaded or default configuration
      */
     private static UpdaterConfig load() {
         File configFile = new File(CONFIG_FILE);
 
         if (!configFile.exists()) {
-            LOGGER.info("Config file not found, creating default: {}", CONFIG_FILE);
-            UpdaterConfig defaultConfig = createDefault();
-            defaultConfig.save();
+            LOGGER.info("Config file not found. On server, create config file. On client, server will push config.");
+            UpdaterConfig defaultConfig = createMinimal();
             return defaultConfig;
         }
 
@@ -80,8 +83,8 @@ public class UpdaterConfig {
 
             return config;
         } catch (IOException | JsonSyntaxException e) {
-            LOGGER.error("Failed to load config from {}, using default", CONFIG_FILE, e);
-            return createDefault();
+            LOGGER.error("Failed to load config from {}, using minimal config", CONFIG_FILE, e);
+            return createMinimal();
         }
     }
 
@@ -102,6 +105,51 @@ public class UpdaterConfig {
         config.managedMods.add(exampleMod);
 
         return config;
+    }
+
+    /**
+     * Creates a minimal configuration with no managed mods.
+     * Used on clients when no config file exists (server will push config).
+     * @return the minimal configuration
+     */
+    private static UpdaterConfig createMinimal() {
+        UpdaterConfig config = new UpdaterConfig();
+        // Empty managed mods list - will be populated by server
+        return config;
+    }
+
+    /**
+     * Applies configuration received from server.
+     * This allows drop-and-go deployment where clients don't need config files.
+     * @param managedMods the managed mods from server
+     * @param autoDownload auto download setting from server
+     * @param autoInstall auto install setting from server
+     * @param checkIntervalMinutes check interval from server
+     * @param downloadTimeoutSeconds download timeout from server
+     */
+    public void applyServerConfig(List<ManagedModConfig> managedMods,
+                                  boolean autoDownload,
+                                  boolean autoInstall,
+                                  int checkIntervalMinutes,
+                                  int downloadTimeoutSeconds) {
+        LOGGER.info("Applying configuration from server: {} managed mods", managedMods.size());
+
+        this.managedMods = new ArrayList<>(managedMods);
+        this.autoDownload = autoDownload;
+        this.autoInstall = autoInstall;
+        this.checkIntervalMinutes = checkIntervalMinutes;
+        this.downloadTimeoutSeconds = downloadTimeoutSeconds;
+        this.serverProvided = true;
+
+        // Don't save server-provided config to disk
+    }
+
+    /**
+     * Checks if this configuration was provided by the server.
+     * @return true if server-provided, false if local config
+     */
+    public boolean isServerProvided() {
+        return serverProvided;
     }
 
     /**
