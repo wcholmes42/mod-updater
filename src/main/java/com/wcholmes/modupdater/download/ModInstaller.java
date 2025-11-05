@@ -140,9 +140,13 @@ public class ModInstaller {
                     while (is.read(buffer) != -1) {
                         // Reading triggers signature verification in JarFile
                     }
-                } catch (java.security.SignatureException e) {
-                    LOGGER.error("❌ Signature verification failed for entry {}: {}", entry.getName(), e.getMessage());
-                    return false;
+                } catch (java.io.IOException e) {
+                    // IOException may wrap SignatureException if signature verification fails
+                    if (e.getCause() instanceof java.security.SignatureException) {
+                        LOGGER.error("❌ Signature verification failed for entry {}: {}", entry.getName(), e.getMessage());
+                        return false;
+                    }
+                    throw e; // Re-throw other IOExceptions
                 }
 
                 // After reading, check if this entry has a valid signature
@@ -202,9 +206,6 @@ public class ModInstaller {
                 return true;  // Change to 'false' to enforce signature requirement
             }
 
-        } catch (java.security.SignatureException e) {
-            LOGGER.error("❌ JAR signature verification failed for {}: {}", fileName, e.getMessage());
-            return false;
         } catch (Exception e) {
             LOGGER.error("JAR signature verification error for {}: {}", fileName, e.getMessage());
             return false;
