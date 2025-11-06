@@ -60,16 +60,6 @@ esac
 NEW_VERSION="${MAJOR}.${MINOR}.${PATCH}"
 echo -e "${GREEN}New version: ${NEW_VERSION}${NC}"
 
-# Check for uncommitted changes
-if ! git diff-index --quiet HEAD --; then
-    echo -e "${YELLOW}Warning: You have uncommitted changes${NC}"
-    read -p "Continue anyway? (y/N) " -n 1 -r
-    echo
-    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-        exit 1
-    fi
-fi
-
 # Update version in build.gradle
 echo -e "${YELLOW}Updating build.gradle...${NC}"
 sed -i "s/^version = '.*'$/version = '${NEW_VERSION}'/" build.gradle
@@ -81,18 +71,6 @@ sed -i "s/^version=\".*\"$/version=\"${NEW_VERSION}\"/" src/main/resources/META-
 # Update version in ModUpdater.java welcome message
 echo -e "${YELLOW}Updating ModUpdater.java...${NC}"
 sed -i "s/ModUpdater v[0-9]\+\.[0-9]\+\.[0-9]\+/ModUpdater v${NEW_VERSION}/" src/main/java/com/wcholmes/modupdater/ModUpdater.java
-
-# Show changes
-echo -e "${GREEN}Version updated to ${NEW_VERSION}:${NC}"
-git diff build.gradle src/main/resources/META-INF/mods.toml src/main/java/com/wcholmes/modupdater/ModUpdater.java
-
-# Confirm before committing
-read -p "Commit and push these changes? (y/N) " -n 1 -r
-echo
-if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-    echo -e "${YELLOW}Aborting. Changes have been made but not committed.${NC}"
-    exit 1
-fi
 
 # Commit changes
 echo -e "${YELLOW}Committing changes...${NC}"
