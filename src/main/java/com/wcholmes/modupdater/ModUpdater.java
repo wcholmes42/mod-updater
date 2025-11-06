@@ -70,6 +70,15 @@ public class ModUpdater {
         // Load configuration
         UpdaterConfig config = UpdaterConfig.getInstance();
         LOGGER.info("Configuration loaded: {} managed mods", config.getManagedMods().size());
+        // Validate and warn about configuration issues
+        com.wcholmes.modupdater.config.ConfigValidator.ValidationResult validation = 
+            com.wcholmes.modupdater.config.ConfigValidator.validate(config);
+        if (validation.hasWarnings() || validation.hasErrors()) {
+            LOGGER.warn("=".repeat(70));
+            LOGGER.warn("SERVER ADMIN: ModUpdater configuration has issues!");
+            LOGGER.warn("Please review the warnings/errors above and fix your config.");
+            LOGGER.warn("=".repeat(70));
+        }
 
         // Initialize registry
         ModRegistry.getInstance();
@@ -229,6 +238,7 @@ public class ModUpdater {
             packet.isAutoDownload(),
             packet.isAutoInstall(),
             packet.getCheckIntervalMinutes(),
+            packet.isPeriodicCheckEnabled(),
             packet.getDownloadTimeoutSeconds()
         );
 
@@ -302,6 +312,7 @@ public class ModUpdater {
                 config.isAutoDownload(),
                 config.isAutoInstall(),
                 config.getCheckIntervalMinutes(),
+                config.isPeriodicCheckEnabled(),
                 config.getDownloadTimeoutSeconds()
             );
 

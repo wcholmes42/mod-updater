@@ -16,7 +16,13 @@
       "Bash(tasklist:*)",
       "Bash(findstr:*)",
       "Bash(cat:*)",
-      "Bash(taskkill:*)"
+      "Bash(taskkill:*)",
+      "Bash(gh repo create:*)",
+      "Bash(for file in family-pack.json test-pack.json example-pack.json)",
+      "Bash(do cat \"$file\")",
+      "Bash(./gradlew:*)",
+      "Bash(cmd.exe /c run.bat)",
+      "Bash(powershell -Command \"Stop-Process -Name java -Force\")"
     ],
     "deny": [],
     "ask": []

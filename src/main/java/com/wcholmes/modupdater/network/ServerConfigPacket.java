@@ -15,17 +15,20 @@ public class ServerConfigPacket {
     private final boolean autoDownload;
     private final boolean autoInstall;
     private final int checkIntervalMinutes;
+    private final boolean periodicCheckEnabled;
     private final int downloadTimeoutSeconds;
 
     public ServerConfigPacket(List<ManagedModConfig> managedMods,
                              boolean autoDownload,
                              boolean autoInstall,
                              int checkIntervalMinutes,
+                             boolean periodicCheckEnabled,
                              int downloadTimeoutSeconds) {
         this.managedMods = managedMods;
         this.autoDownload = autoDownload;
         this.autoInstall = autoInstall;
         this.checkIntervalMinutes = checkIntervalMinutes;
+        this.periodicCheckEnabled = periodicCheckEnabled;
         this.downloadTimeoutSeconds = downloadTimeoutSeconds;
     }
 
@@ -36,6 +39,7 @@ public class ServerConfigPacket {
         // Write global settings
         buf.writeBoolean(packet.autoDownload);
         buf.writeBoolean(packet.autoInstall);
+        buf.writeBoolean(packet.periodicCheckEnabled);
         buf.writeInt(packet.checkIntervalMinutes);
         buf.writeInt(packet.downloadTimeoutSeconds);
 
@@ -59,6 +63,7 @@ public class ServerConfigPacket {
         // Read global settings
         boolean autoDownload = buf.readBoolean();
         boolean autoInstall = buf.readBoolean();
+        boolean periodicCheckEnabled = buf.readBoolean();
         int checkIntervalMinutes = buf.readInt();
         int downloadTimeoutSeconds = buf.readInt();
 
@@ -85,7 +90,7 @@ public class ServerConfigPacket {
         }
 
         return new ServerConfigPacket(managedMods, autoDownload, autoInstall,
-                                     checkIntervalMinutes, downloadTimeoutSeconds);
+                                     checkIntervalMinutes, periodicCheckEnabled, downloadTimeoutSeconds);
     }
 
     public List<ManagedModConfig> getManagedMods() {
@@ -102,6 +107,11 @@ public class ServerConfigPacket {
 
     public int getCheckIntervalMinutes() {
         return checkIntervalMinutes;
+    }
+
+
+    public boolean isPeriodicCheckEnabled() {
+        return periodicCheckEnabled;
     }
 
     public int getDownloadTimeoutSeconds() {
