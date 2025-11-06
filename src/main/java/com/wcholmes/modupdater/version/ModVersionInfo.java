@@ -1,9 +1,13 @@
 package com.wcholmes.modupdater.version;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 /**
  * Tracks version information for a managed mod.
  */
 public class ModVersionInfo {
+    private static final Logger LOGGER = LogManager.getLogger();
     private final String modId;
     private String localVersion;
     private String githubVersion;
@@ -43,9 +47,17 @@ public class ModVersionInfo {
     public void checkForUpdate() {
         String target = getTargetVersion();
 
-        if (target == null || localVersion == null) {
-            System.out.println("[ModVersionInfo] " + modId + ": checkForUpdate() - target=" + target + ", local=" + localVersion + " -> updateAvailable=false (null check)");
+        // No target version available - nothing to update to
+        if (target == null) {
+            LOGGER.info("[ModVersionInfo] {}: checkForUpdate() - target=null -> updateAvailable=false", modId);
             updateAvailable = false;
+            return;
+        }
+
+        // Mod not installed but target exists - need to download
+        if (localVersion == null) {
+            LOGGER.info("[ModVersionInfo] {}: checkForUpdate() - local=null, target={} -> updateAvailable=true (not installed)", modId, target);
+            updateAvailable = true;
             return;
         }
 
@@ -53,11 +65,11 @@ public class ModVersionInfo {
             SemanticVersion targetVer = SemanticVersion.parse(target);
             SemanticVersion localVer = SemanticVersion.parse(localVersion);
             updateAvailable = targetVer.isGreaterThan(localVer);
-            System.out.println("[ModVersionInfo] " + modId + ": checkForUpdate() - target=" + target + ", local=" + localVersion + " -> updateAvailable=" + updateAvailable + " (semantic)");
+            LOGGER.info("[ModVersionInfo] {}: checkForUpdate() - target={}, local={} -> updateAvailable={} (semantic)", modId, target, localVersion, updateAvailable);
         } catch (IllegalArgumentException e) {
             // If version parsing fails, do string comparison
             updateAvailable = !target.equals(localVersion);
-            System.out.println("[ModVersionInfo] " + modId + ": checkForUpdate() - target=" + target + ", local=" + localVersion + " -> updateAvailable=" + updateAvailable + " (string compare, parse failed: " + e.getMessage() + ")");
+            LOGGER.info("[ModVersionInfo] {}: checkForUpdate() - target={}, local={} -> updateAvailable={} (string compare, parse failed: {})", modId, target, localVersion, updateAvailable, e.getMessage());
         }
     }
 
