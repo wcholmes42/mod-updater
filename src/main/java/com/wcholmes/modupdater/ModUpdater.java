@@ -70,8 +70,12 @@ public class ModUpdater {
         // Load configuration
         UpdaterConfig config = UpdaterConfig.getInstance();
         LOGGER.info("Configuration loaded: {} managed mods", config.getManagedMods().size());
+
+        // Log actually loaded mod versions from Forge
+        logLoadedModVersions(config);
+
         // Validate and warn about configuration issues
-        com.wcholmes.modupdater.config.ConfigValidator.ValidationResult validation = 
+        com.wcholmes.modupdater.config.ConfigValidator.ValidationResult validation =
             com.wcholmes.modupdater.config.ConfigValidator.validate(config);
         if (validation.hasWarnings() || validation.hasErrors()) {
             LOGGER.warn("=".repeat(70));
@@ -147,6 +151,35 @@ public class ModUpdater {
                 }
             }
         });
+    }
+
+    /**
+     * Logs the actually loaded versions of configured mods from Forge ModList.
+     */
+    private void logLoadedModVersions(UpdaterConfig config) {
+        LOGGER.info("=".repeat(70));
+        LOGGER.info("FORGE-LOADED MOD VERSIONS (for configured mods):");
+
+        try {
+            net.minecraftforge.fml.ModList modList = net.minecraftforge.fml.ModList.get();
+
+            for (ManagedModConfig modConfig : config.getManagedMods()) {
+                String modId = modConfig.getModId();
+                java.util.Optional<? extends net.minecraftforge.forgespi.language.IModInfo> modInfo =
+                    modList.getModContainerById(modId).map(net.minecraftforge.fml.ModContainer::getModInfo);
+
+                if (modInfo.isPresent()) {
+                    String loadedVersion = modInfo.get().getVersion().toString();
+                    LOGGER.info("  {} -> LOADED v{} (from Forge ModList)", modId, loadedVersion);
+                } else {
+                    LOGGER.info("  {} -> NOT LOADED (not found in Forge ModList)", modId);
+                }
+            }
+        } catch (Exception e) {
+            LOGGER.error("Failed to query Forge ModList", e);
+        }
+
+        LOGGER.info("=".repeat(70));
     }
 
     /**
@@ -286,7 +319,7 @@ public class ModUpdater {
 
             // Send welcome message showing mod version
             net.minecraft.network.chat.Component message = net.minecraft.network.chat.Component.literal(
-                "[Mod Updater] Server running ModUpdater v1.2.27"
+                "[Mod Updater] Server running ModUpdater v1.2.28"
             ).withStyle(net.minecraft.ChatFormatting.AQUA);
             player.sendSystemMessage(message);
         }
