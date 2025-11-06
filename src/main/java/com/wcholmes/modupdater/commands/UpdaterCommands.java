@@ -13,8 +13,8 @@ import net.minecraft.server.level.ServerPlayer;
 
 /**
  * Commands for the Mod Updater.
- * /modupdater sync - Client-only: Pull server config and update client mods from GitHub
- * /modupdater updateserver - Server-only (OP required): Update server mods from GitHub
+ * /modupdater - Client: Pull server config and update client mods from GitHub
+ * /modupdater server - Server-only (OP required): Refresh config and update server mods from GitHub
  */
 public class UpdaterCommands {
 
@@ -24,15 +24,14 @@ public class UpdaterCommands {
     public static void register(CommandDispatcher<CommandSourceStack> dispatcher) {
         dispatcher.register(
             Commands.literal("modupdater")
-                .then(Commands.literal("sync")
-                    .executes(UpdaterCommands::syncClientMods))
-                .then(Commands.literal("updateserver")
+                .executes(UpdaterCommands::syncClientMods)
+                .then(Commands.literal("server")
                     .executes(UpdaterCommands::updateServerMods))
         );
     }
 
     /**
-     * Handles /modupdater sync - Client command: Pull server config and update client mods from GitHub.
+     * Handles /modupdater - Client command: Pull server config and update client mods from GitHub.
      * When a player runs this, the server sends its config to that player's client.
      */
     private static int syncClientMods(CommandContext<CommandSourceStack> context) {
@@ -53,15 +52,15 @@ public class UpdaterCommands {
     }
 
     /**
-     * Handles /modupdater updateserver - Server-only (OP required): Update server mods from GitHub.
-     * Checks GitHub based on server's config and downloads any available updates.
+     * Handles /modupdater server - Server-only (OP required): Refresh config and update server mods.
+     * Refreshes config from GitHub (if bootstrap), then checks for mod updates.
      */
     private static int updateServerMods(CommandContext<CommandSourceStack> context) {
         CommandSourceStack source = context.getSource();
 
         // This command only makes sense on the server side
         if (!(source.getEntity() instanceof ServerPlayer)) {
-            source.sendFailure(Component.literal("[Mod Updater] The 'updateserver' command is for server operators only. Use '/modupdater sync' on the client."));
+            source.sendFailure(Component.literal("[Mod Updater] The 'server' command is for server operators only. Use '/modupdater' as a client."));
             return 0;
         }
 
@@ -76,17 +75,27 @@ public class UpdaterCommands {
             return 0;
         }
 
-        source.sendSuccess(() -> Component.literal("[Mod Updater] Checking GitHub for server mod updates..."), true);
+        source.sendSuccess(() -> Component.literal("[Mod Updater] Refreshing config and checking for updates..."), true);
 
-        // Run update check asynchronously
+        // Run config refresh and update check asynchronously
         new Thread(() -> {
             try {
-                // Clear GitHub API cache to ensure fresh data for manual update check
-                ModUpdater.getVersionChecker().clearCache();
+                // First, try to refresh config from GitHub (if bootstrap config exists)
+                boolean configRefreshed = UpdaterConfig.refreshConfig();
+                if (configRefreshed) {
+                    source.sendSuccess(() -> Component.literal("[Mod Updater] Config refreshed from GitHub"), true);
+                    // Reload mod registry to pick up new config
+                    com.wcholmes.modupdater.registry.ModRegistry.getInstance().reload();
+                } else {
+                    // Not an error - just means no bootstrap config or refresh not needed
+                    source.sendSuccess(() -> Component.literal("[Mod Updater] Using local config"), true);
+                }
+
+                // Check for mod updates (always fetches fresh from GitHub with cache-busting)
                 ModUpdater.checkForUpdates();
                 source.sendSuccess(() -> Component.literal("[Mod Updater] Server update check complete. Check logs for details."), true);
             } catch (Exception e) {
-                source.sendFailure(Component.literal("[Mod Updater] Error checking for updates: " + e.getMessage()));
+                source.sendFailure(Component.literal("[Mod Updater] Error during update: " + e.getMessage()));
             }
         }, "ModUpdater-ServerUpdate").start();
 

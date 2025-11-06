@@ -1,4 +1,30 @@
 {
+  "_comment": "========================================",
+  "_comment2": "BOOTSTRAP CONFIG EXAMPLE",
+  "_comment3": "Use this pattern to pull pack config from GitHub",
+  "_comment4": "The server will fetch the real config on startup",
+  "_comment5": "========================================",
+  "configSource": {
+    "type": "github",
+    "repo": "wcholmes42/modpack-configs",
+    "path": "packs/family-pack.json",
+    "branch": "main"
+  }
+}
+
+{
+  "_comment": "========================================",
+  "_comment2": "FULL PACK CONFIG EXAMPLE",
+  "_comment3": "This is what the pack config on GitHub should look like",
+  "_comment4": "It includes configSource pointing to itself for future updates",
+  "_comment5": "Plus the full list of managed mods",
+  "_comment6": "========================================",
+  "configSource": {
+    "type": "github",
+    "repo": "wcholmes42/modpack-configs",
+    "path": "packs/family-pack.json",
+    "branch": "main"
+  },
   "enabled": true,
   "autoDownload": true,
   "autoInstall": true,
@@ -6,12 +32,29 @@
     {
       "modId": "landscaper",
       "githubRepo": "wcholmes42/minecraft-landscaper",
-      "jarPattern": "landscaper-{version}.jar"
-    },
+      "jarPattern": "landscaper-{version}.jar",
+      "enabled": true,
+      "updateChannel": "stable"
+    }
+  ]
+}
+
+{
+  "_comment": "========================================",
+  "_comment2": "LEGACY/STANDALONE CONFIG EXAMPLE",
+  "_comment3": "Use this if you don't want bootstrap/GitHub config",
+  "_comment4": "Just a local config file with no remote fetching",
+  "_comment5": "========================================",
+  "enabled": true,
+  "autoDownload": true,
+  "autoInstall": true,
+  "managedMods": [
     {
-      "modId": "someothermod",
-      "githubRepo": "wcholmes42/another-mod",
-      "jarPattern": "anothermod-{version}.jar"
+      "modId": "landscaper",
+      "githubRepo": "wcholmes42/minecraft-landscaper",
+      "jarPattern": "landscaper-{version}.jar",
+      "enabled": true,
+      "updateChannel": "stable"
     }
   ]
 }

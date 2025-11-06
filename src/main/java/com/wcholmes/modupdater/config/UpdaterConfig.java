@@ -23,6 +23,7 @@ public class UpdaterConfig {
     private static final String CONFIG_FILE = "config/modupdater.json";
 
     // Configuration fields
+    private ConfigSource configSource = null; // Points to GitHub location of real config
     private boolean enabled = true;
     private boolean autoDownload = true;
     private boolean autoInstall = true;
@@ -72,6 +73,21 @@ public class UpdaterConfig {
             UpdaterConfig config = GSON.fromJson(reader, UpdaterConfig.class);
             LOGGER.info("Loaded configuration from {}", CONFIG_FILE);
 
+            // Check if this is a bootstrap config that needs to fetch from GitHub
+            if (config.configSource != null && config.configSource.isValid()) {
+                LOGGER.info("Bootstrap config detected: {}", config.configSource);
+                UpdaterConfig remoteConfig = fetchRemoteConfig(config.configSource);
+                if (remoteConfig != null) {
+                    return remoteConfig;
+                } else {
+                    LOGGER.error("Failed to fetch remote config from GitHub. ModUpdater will be disabled for this session.");
+                    LOGGER.error("To fix: Check network connection and restart server, or use /modupdater server command when available.");
+                    UpdaterConfig disabledConfig = createMinimal();
+                    disabledConfig.enabled = false;
+                    return disabledConfig;
+                }
+            }
+
             // Validate managed mods
             config.managedMods.removeIf(mod -> {
                 if (!mod.isValid()) {
@@ -116,6 +132,95 @@ public class UpdaterConfig {
         UpdaterConfig config = new UpdaterConfig();
         // Empty managed mods list - will be populated by server
         return config;
+    }
+
+    /**
+     * Fetches the remote configuration from GitHub.
+     * @param configSource the source to fetch from
+     * @return the fetched configuration, or null if fetch failed
+     */
+    private static UpdaterConfig fetchRemoteConfig(ConfigSource configSource) {
+        LOGGER.info("Fetching remote config from: {}/{} (branch: {})",
+            configSource.getRepo(), configSource.getPath(), configSource.getBranch());
+
+        try {
+            com.wcholmes.modupdater.github.GitHubAPI api = new com.wcholmes.modupdater.github.GitHubAPI();
+            String jsonContent = api.fetchRawFile(
+                configSource.getRepo(),
+                configSource.getPath(),
+                configSource.getBranch()
+            );
+
+            if (jsonContent == null) {
+                LOGGER.error("Failed to fetch remote config: GitHub returned null");
+                return null;
+            }
+
+            UpdaterConfig config = GSON.fromJson(jsonContent, UpdaterConfig.class);
+            if (config == null) {
+                LOGGER.error("Failed to parse remote config: JSON parsing returned null");
+                return null;
+            }
+
+            LOGGER.info("Successfully fetched and parsed remote config: {} managed mods", config.managedMods.size());
+
+            // Validate managed mods
+            config.managedMods.removeIf(mod -> {
+                if (!mod.isValid()) {
+                    LOGGER.warn("Removing invalid mod config: {}", mod);
+                    return true;
+                }
+                return false;
+            });
+
+            return config;
+        } catch (JsonSyntaxException e) {
+            LOGGER.error("Failed to parse remote config JSON", e);
+            return null;
+        } catch (Exception e) {
+            LOGGER.error("Unexpected error fetching remote config", e);
+            return null;
+        }
+    }
+
+    /**
+     * Refreshes the configuration by re-fetching from the remote source.
+     * Only works if the current config has a configSource defined.
+     * @return true if refresh was successful, false otherwise
+     */
+    public static boolean refreshConfig() {
+        LOGGER.info("Manual config refresh requested");
+
+        // First, reload the bootstrap config from disk
+        File configFile = new File(CONFIG_FILE);
+        if (!configFile.exists()) {
+            LOGGER.error("Cannot refresh: Bootstrap config file not found at {}", CONFIG_FILE);
+            return false;
+        }
+
+        try (FileReader reader = new FileReader(configFile)) {
+            UpdaterConfig bootstrapConfig = GSON.fromJson(reader, UpdaterConfig.class);
+
+            if (bootstrapConfig.configSource == null || !bootstrapConfig.configSource.isValid()) {
+                LOGGER.error("Cannot refresh: No valid configSource in bootstrap config");
+                return false;
+            }
+
+            LOGGER.info("Refreshing from: {}", bootstrapConfig.configSource);
+            UpdaterConfig newConfig = fetchRemoteConfig(bootstrapConfig.configSource);
+
+            if (newConfig != null) {
+                instance = newConfig;
+                LOGGER.info("Config refresh successful");
+                return true;
+            } else {
+                LOGGER.error("Config refresh failed");
+                return false;
+            }
+        } catch (IOException | JsonSyntaxException e) {
+            LOGGER.error("Failed to read bootstrap config during refresh", e);
+            return false;
+        }
     }
 
     /**
@@ -280,5 +385,78 @@ public class UpdaterConfig {
 
     public void setManagedMods(List<ManagedModConfig> managedMods) {
         this.managedMods = managedMods;
+    }
+
+    public ConfigSource getConfigSource() {
+        return configSource;
+    }
+
+    public void setConfigSource(ConfigSource configSource) {
+        this.configSource = configSource;
+    }
+
+    /**
+     * Configuration source that points to a remote config file (e.g., GitHub).
+     * Used for bootstrap configs that fetch the real pack config from a remote location.
+     */
+    public static class ConfigSource {
+        private String type = "github"; // Currently only "github" is supported
+        private String repo; // Format: "owner/repo"
+        private String path; // Path to config file in repo, e.g., "packs/family-pack.json"
+        private String branch = "main"; // Branch to fetch from
+
+        public ConfigSource() {}
+
+        public ConfigSource(String repo, String path, String branch) {
+            this.repo = repo;
+            this.path = path;
+            this.branch = branch;
+        }
+
+        public boolean isValid() {
+            return repo != null && !repo.isEmpty()
+                && path != null && !path.isEmpty()
+                && branch != null && !branch.isEmpty()
+                && "github".equals(type);
+        }
+
+        // Getters and setters
+        public String getType() {
+            return type;
+        }
+
+        public void setType(String type) {
+            this.type = type;
+        }
+
+        public String getRepo() {
+            return repo;
+        }
+
+        public void setRepo(String repo) {
+            this.repo = repo;
+        }
+
+        public String getPath() {
+            return path;
+        }
+
+        public void setPath(String path) {
+            this.path = path;
+        }
+
+        public String getBranch() {
+            return branch;
+        }
+
+        public void setBranch(String branch) {
+            this.branch = branch;
+        }
+
+        @Override
+        public String toString() {
+            return String.format("ConfigSource{type=%s, repo=%s, path=%s, branch=%s}",
+                type, repo, path, branch);
+        }
     }
 }

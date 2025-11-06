@@ -238,8 +238,8 @@ public class ModUpdater {
 
         // Automatically check for updates after receiving config
         LOGGER.info("Calling checkForUpdates() from handleServerConfig");
-        // Clear GitHub API cache to ensure fresh data for manual sync command
-        versionChecker.clearCache();
+        // Clear version info state to ensure fresh check
+        versionChecker.clearVersionInfo();
         checkForUpdates();
         LOGGER.info("Returned from checkForUpdates()");
     }

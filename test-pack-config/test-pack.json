@@ -1,0 +1,27 @@
+{
+  "configSource": {
+    "type": "github",
+    "repo": "wcholmes42/mod-updater",
+    "path": "test-pack-config/test-pack.json",
+    "branch": "main"
+  },
+  "enabled": true,
+  "autoDownload": true,
+  "autoInstall": true,
+  "managedMods": [
+    {
+      "modId": "modupdater",
+      "githubRepo": "wcholmes42/mod-updater",
+      "jarPattern": "modupdater-{version}.jar",
+      "enabled": true,
+      "updateChannel": "stable"
+    },
+    {
+      "modId": "landscaper",
+      "githubRepo": "wcholmes42/minecraft-landscaper",
+      "jarPattern": "landscaper-{version}.jar",
+      "enabled": true,
+      "updateChannel": "stable"
+    }
+  ]
+}

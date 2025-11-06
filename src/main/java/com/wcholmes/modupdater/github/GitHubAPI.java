@@ -20,9 +20,8 @@ public class GitHubAPI {
     private static final Logger LOGGER = LogManager.getLogger();
     private static final Gson GSON = GsonProvider.getGson();
     private static final String API_BASE = "https://api.github.com";
+    private static final String RAW_BASE = "https://raw.githubusercontent.com";
     private static final int TIMEOUT_MS = 10000; // 10 seconds
-
-    private final ReleaseCache cache = new ReleaseCache();
 
     /**
      * Gets the latest release for a repository (non-prerelease).
@@ -43,13 +42,6 @@ public class GitHubAPI {
      */
     public CompletableFuture<Release> getLatestRelease(String repo, boolean includePrerelease) {
         return CompletableFuture.supplyAsync(() -> {
-            // Check cache first
-            Release cached = cache.get(repo);
-            if (cached != null) {
-                LOGGER.debug("Using cached release for {}", repo);
-                return cached;
-            }
-
             String endpoint = includePrerelease
                     ? String.format("%s/repos/%s/releases", API_BASE, repo)
                     : String.format("%s/repos/%s/releases/latest", API_BASE, repo);
@@ -57,7 +49,6 @@ public class GitHubAPI {
             try {
                 Release release = fetchRelease(endpoint, includePrerelease);
                 if (release != null) {
-                    cache.put(repo, release);
                     LOGGER.info("Fetched latest release for {}: {}", repo, release.getTagName());
                 }
                 return release;
@@ -118,16 +109,60 @@ public class GitHubAPI {
     }
 
     /**
-     * Clears the release cache.
+     * Fetches raw file content from a GitHub repository.
+     * Used for fetching config files from GitHub.
+     *
+     * @param repo the repository in format "owner/repo"
+     * @param path the path to the file in the repo (e.g., "packs/family-pack.json")
+     * @param branch the branch to fetch from (e.g., "main")
+     * @return the raw file content as a string, or null if not found or error
      */
-    public void clearCache() {
-        cache.clear();
+    public String fetchRawFile(String repo, String path, String branch) {
+        // URL format: https://raw.githubusercontent.com/owner/repo/branch/path
+        // Add cache-busting parameter to force fresh fetch
+        String cacheBuster = String.valueOf(System.currentTimeMillis());
+        String url = String.format("%s/%s/%s/%s?cb=%s", RAW_BASE, repo, branch, path, cacheBuster);
+
+        LOGGER.info("Fetching raw file from GitHub: {}", url);
+
+        try {
+            URL urlObj = new URL(url);
+            HttpURLConnection conn = (HttpURLConnection) urlObj.openConnection();
+
+            try {
+                conn.setRequestMethod("GET");
+                conn.setConnectTimeout(TIMEOUT_MS);
+                conn.setReadTimeout(TIMEOUT_MS);
+                conn.setRequestProperty("User-Agent", "ModUpdater/1.0");
+
+                int responseCode = conn.getResponseCode();
+                if (responseCode == 404) {
+                    LOGGER.warn("File not found at: {}", url);
+                    return null;
+                } else if (responseCode != 200) {
+                    LOGGER.error("GitHub returned {}: {}", responseCode, url);
+                    return null;
+                }
+
+                BufferedReader reader = new BufferedReader(new InputStreamReader(conn.getInputStream()));
+                StringBuilder response = new StringBuilder();
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    response.append(line);
+                    response.append('\n');
+                }
+                reader.close();
+
+                LOGGER.info("Successfully fetched raw file from GitHub ({} bytes)", response.length());
+                return response.toString();
+
+            } finally {
+                conn.disconnect();
+            }
+        } catch (IOException e) {
+            LOGGER.error("Failed to fetch raw file from GitHub: {}", e.getMessage());
+            return null;
+        }
     }
 
-    /**
-     * Clears the cache for a specific repository.
-     */
-    public void clearCache(String repo) {
-        cache.clearRepo(repo);
-    }
 }

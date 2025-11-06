@@ -137,10 +137,10 @@ public class VersionChecker {
     }
 
     /**
-     * Clears all cached version information.
+     * Clears all version information state.
+     * Call this before running a fresh update check.
      */
-    public void clearCache() {
+    public void clearVersionInfo() {
         versionInfo.clear();
-        githubAPI.clearCache();
     }
 }

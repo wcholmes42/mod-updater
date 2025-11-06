@@ -10,7 +10,13 @@
       "Bash(gh release view:*)",
       "Bash(chmod:*)",
       "Bash(gh release download:*)",
-      "Bash(jarsigner:*)"
+      "Bash(jarsigner:*)",
+      "Bash(java:*)",
+      "Bash(./gradlew build:*)",
+      "Bash(tasklist:*)",
+      "Bash(findstr:*)",
+      "Bash(cat:*)",
+      "Bash(taskkill:*)"
     ],
     "deny": [],
     "ask": []
