@@ -86,6 +86,17 @@ public class UpdaterCommands {
                     source.sendSuccess(() -> Component.literal("[Mod Updater] Config refreshed from GitHub"), true);
                     // Reload mod registry to pick up new config
                     com.wcholmes.modupdater.registry.ModRegistry.getInstance().reload();
+                    // Validate refreshed config
+                    com.wcholmes.modupdater.config.UpdaterConfig config = com.wcholmes.modupdater.config.UpdaterConfig.getInstance();
+                    com.wcholmes.modupdater.config.ConfigValidator.ValidationResult validation = 
+                        com.wcholmes.modupdater.config.ConfigValidator.validate(config);
+                    if (validation.hasWarnings()) {
+                        source.sendSuccess(() -> Component.literal("[Mod Updater] Warning: Config has issues. Check server logs."), true);
+                    }
+                    if (validation.hasErrors()) {
+                        source.sendFailure(Component.literal("[Mod Updater] Error: Config validation failed. Check server logs."));
+                        return;
+                    }
                 } else {
                     // Not an error - just means no bootstrap config or refresh not needed
                     source.sendSuccess(() -> Component.literal("[Mod Updater] Using local config"), true);

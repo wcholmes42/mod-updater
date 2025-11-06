@@ -7,7 +7,7 @@
   "configSource": {
     "type": "github",
     "repo": "wcholmes42/modpack-configs",
-    "path": "packs/family-pack.json",
+    "path": "family-pack.json",
     "branch": "main"
   }
 }
@@ -22,12 +22,13 @@
   "configSource": {
     "type": "github",
     "repo": "wcholmes42/modpack-configs",
-    "path": "packs/family-pack.json",
+    "path": "family-pack.json",
     "branch": "main"
   },
   "enabled": true,
   "autoDownload": true,
   "autoInstall": true,
+  "periodicCheckEnabled": false,
   "managedMods": [
     {
       "modId": "landscaper",
@@ -48,6 +49,7 @@
   "enabled": true,
   "autoDownload": true,
   "autoInstall": true,
+  "periodicCheckEnabled": false,
   "managedMods": [
     {
       "modId": "landscaper",

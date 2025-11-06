@@ -29,6 +29,7 @@ public class UpdaterConfig {
     private boolean autoInstall = true;
     private boolean checkOnStartup = true;
     private boolean checkOnServerJoin = true;
+    private boolean periodicCheckEnabled = false; // Periodic update checks (defaults to off)
     private int checkIntervalMinutes = 60;
     private int downloadTimeoutSeconds = 30;
     private boolean verboseLogging = false;
@@ -75,6 +76,17 @@ public class UpdaterConfig {
 
             // Check if this is a bootstrap config that needs to fetch from GitHub
             if (config.configSource != null && config.configSource.isValid()) {
+                // Validate bootstrap config source
+                ConfigValidator.ValidationResult sourceValidation = ConfigValidator.validateConfigSource(config.configSource);
+                if (sourceValidation.hasErrors()) {
+                    LOGGER.error("Bootstrap config source validation failed:");
+                    sourceValidation.logResults(LOGGER);
+                    LOGGER.error("ModUpdater will be disabled for this session.");
+                    UpdaterConfig disabledConfig = createMinimal();
+                    disabledConfig.enabled = false;
+                    return disabledConfig;
+                }
+                sourceValidation.logResults(LOGGER);
                 LOGGER.info("Bootstrap config detected: {}", config.configSource);
                 UpdaterConfig remoteConfig = fetchRemoteConfig(config.configSource);
                 if (remoteConfig != null) {
@@ -88,18 +100,29 @@ public class UpdaterConfig {
                 }
             }
 
-            // Validate managed mods
-            config.managedMods.removeIf(mod -> {
-                if (!mod.isValid()) {
-                    LOGGER.warn("Removing invalid mod config: {}", mod);
-                    return true;
-                }
-                return false;
-            });
+            // Validate configuration
+            ConfigValidator.ValidationResult validation = ConfigValidator.validate(config);
+            validation.logResults(LOGGER);
+
+            if (validation.hasErrors()) {
+                LOGGER.error("Configuration validation failed. ModUpdater will be disabled for this session.");
+                UpdaterConfig disabledConfig = createMinimal();
+                disabledConfig.enabled = false;
+                return disabledConfig;
+            }
 
             return config;
-        } catch (IOException | JsonSyntaxException e) {
-            LOGGER.error("Failed to load config from {}, using minimal config", CONFIG_FILE, e);
+        } catch (JsonSyntaxException e) {
+            LOGGER.error("Failed to parse JSON in config file");
+            JsonSyntaxHelper.diagnoseJsonError(configFile, e, LOGGER);
+            LOGGER.error("ModUpdater will use minimal config and be disabled.");
+            LOGGER.error("Please fix the JSON syntax errors and restart the server.");
+            UpdaterConfig disabledConfig = createMinimal();
+            disabledConfig.enabled = false;
+            return disabledConfig;
+        } catch (IOException e) {
+            LOGGER.error("Failed to read config file from {}", CONFIG_FILE, e);
+            LOGGER.error("Using minimal config");
             return createMinimal();
         }
     }
@@ -164,18 +187,35 @@ public class UpdaterConfig {
 
             LOGGER.info("Successfully fetched and parsed remote config: {} managed mods", config.managedMods.size());
 
-            // Validate managed mods
-            config.managedMods.removeIf(mod -> {
-                if (!mod.isValid()) {
-                    LOGGER.warn("Removing invalid mod config: {}", mod);
-                    return true;
-                }
-                return false;
-            });
+            // Validate configuration
+            ConfigValidator.ValidationResult validation = ConfigValidator.validate(config);
+            validation.logResults(LOGGER);
+
+            if (validation.hasErrors()) {
+                LOGGER.error("Remote configuration validation failed. Cannot use this config.");
+                return null;
+            }
 
             return config;
         } catch (JsonSyntaxException e) {
-            LOGGER.error("Failed to parse remote config JSON", e);
+            LOGGER.error("=".repeat(70));
+            LOGGER.error("JSON SYNTAX ERROR IN REMOTE CONFIG");
+            LOGGER.error("Repository: {}/{}", configSource.getRepo(), configSource.getPath());
+            LOGGER.error("Branch: {}", configSource.getBranch());
+            LOGGER.error("=".repeat(70));
+            LOGGER.error("Parse Error: {}", e.getMessage());
+            LOGGER.error("");
+            LOGGER.error("The pack config on GitHub has a JSON syntax error.");
+            LOGGER.error("Please fix the JSON in the repository and try again.");
+            LOGGER.error("");
+            LOGGER.error("COMMON JSON MISTAKES:");
+            LOGGER.error("  - Trailing commas after last property");
+            LOGGER.error("  - Missing commas between properties");
+            LOGGER.error("  - Using single quotes instead of double quotes");
+            LOGGER.error("  - Comments (not allowed in JSON)");
+            LOGGER.error("");
+            LOGGER.error("TIP: Validate the config with jsonlint.com before committing");
+            LOGGER.error("=".repeat(70));
             return null;
         } catch (Exception e) {
             LOGGER.error("Unexpected error fetching remote config", e);
@@ -217,8 +257,12 @@ public class UpdaterConfig {
                 LOGGER.error("Config refresh failed");
                 return false;
             }
-        } catch (IOException | JsonSyntaxException e) {
-            LOGGER.error("Failed to read bootstrap config during refresh", e);
+        } catch (JsonSyntaxException e) {
+            LOGGER.error("JSON syntax error in bootstrap config during refresh");
+            JsonSyntaxHelper.diagnoseJsonError(configFile, e, LOGGER);
+            return false;
+        } catch (IOException e) {
+            LOGGER.error("Failed to read bootstrap config file during refresh", e);
             return false;
         }
     }
@@ -230,12 +274,14 @@ public class UpdaterConfig {
      * @param autoDownload auto download setting from server
      * @param autoInstall auto install setting from server
      * @param checkIntervalMinutes check interval from server
+     * @param periodicCheckEnabled periodic check enabled setting from server
      * @param downloadTimeoutSeconds download timeout from server
      */
     public void applyServerConfig(List<ManagedModConfig> managedMods,
                                   boolean autoDownload,
                                   boolean autoInstall,
                                   int checkIntervalMinutes,
+                                  boolean periodicCheckEnabled,
                                   int downloadTimeoutSeconds) {
         LOGGER.info("Applying configuration from server: {} managed mods", managedMods.size());
 
@@ -243,6 +289,7 @@ public class UpdaterConfig {
         this.autoDownload = autoDownload;
         this.autoInstall = autoInstall;
         this.checkIntervalMinutes = checkIntervalMinutes;
+        this.periodicCheckEnabled = periodicCheckEnabled;
         this.downloadTimeoutSeconds = downloadTimeoutSeconds;
         this.serverProvided = true;
 
@@ -345,6 +392,14 @@ public class UpdaterConfig {
 
     public void setCheckOnServerJoin(boolean checkOnServerJoin) {
         this.checkOnServerJoin = checkOnServerJoin;
+    }
+
+    public boolean isPeriodicCheckEnabled() {
+        return periodicCheckEnabled;
+    }
+
+    public void setPeriodicCheckEnabled(boolean periodicCheckEnabled) {
+        this.periodicCheckEnabled = periodicCheckEnabled;
     }
 
     public int getCheckIntervalMinutes() {
