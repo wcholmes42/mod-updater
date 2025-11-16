@@ -105,7 +105,8 @@ public class DownloadQueue {
 
                 File downloadedFile = downloader.download().join();
 
-                if (downloadedFile != null && UpdaterConfig.getInstance().isAutoInstall()) {
+                if (downloadedFile != null) {
+                    // Always cleanup old versions after successful download (regardless of autoInstall)
                     boolean installed = ModInstaller.install(
                             downloadedFile,
                             task.modConfig,
@@ -115,10 +116,8 @@ public class DownloadQueue {
                     if (installed) {
                         return new DownloadResult(task.modConfig.getModId(), task.version, true, null);
                     } else {
-                        return new DownloadResult(task.modConfig.getModId(), task.version, false, "Installation failed");
+                        return new DownloadResult(task.modConfig.getModId(), task.version, false, "Cleanup/installation failed");
                     }
-                } else if (downloadedFile != null) {
-                    return new DownloadResult(task.modConfig.getModId(), task.version, true, null);
                 } else {
                     return new DownloadResult(task.modConfig.getModId(), task.version, false, "Download failed");
                 }
