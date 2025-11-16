@@ -10,16 +10,18 @@ NC='\033[0m' # No Color
 # Check if version bump type provided
 if [ -z "$1" ]; then
     echo -e "${RED}Error: Version bump type required${NC}"
-    echo "Usage: ./release.sh <major|minor|patch>"
+    echo "Usage: ./release.sh <major|minor|patch> [commit message]"
     echo ""
     echo "Examples:"
-    echo "  ./release.sh major   # 1.2.22 -> 2.0.0"
-    echo "  ./release.sh minor   # 1.2.22 -> 1.3.0"
-    echo "  ./release.sh patch   # 1.2.22 -> 1.2.23"
+    echo "  ./release.sh patch                    # 1.2.22 -> 1.2.23"
+    echo "  ./release.sh patch 'Fix critical bug' # With custom message"
+    echo "  ./release.sh minor                    # 1.2.22 -> 1.3.0"
+    echo "  ./release.sh major                    # 1.2.22 -> 2.0.0"
     exit 1
 fi
 
 BUMP_TYPE="$1"
+COMMIT_MSG="${2:-}"
 
 # Validate bump type
 if [[ ! "$BUMP_TYPE" =~ ^(major|minor|patch)$ ]]; then
@@ -72,14 +74,28 @@ sed -i "s/^version=\".*\"$/version=\"${NEW_VERSION}\"/" src/main/resources/META-
 echo -e "${YELLOW}Updating ModUpdater.java...${NC}"
 sed -i "s/ModUpdater v[0-9]\+\.[0-9]\+\.[0-9]\+/ModUpdater v${NEW_VERSION}/" src/main/java/com/wcholmes/modupdater/ModUpdater.java
 
-# Commit changes
-echo -e "${YELLOW}Committing changes...${NC}"
-git add build.gradle src/main/resources/META-INF/mods.toml src/main/java/com/wcholmes/modupdater/ModUpdater.java
-git commit -m "Update to v${NEW_VERSION}
+# Commit ALL changes (not just version files)
+echo -e "${YELLOW}Committing all changes...${NC}"
+git add -A
+
+# Build commit message
+if [ -n "$COMMIT_MSG" ]; then
+    FULL_MSG="$COMMIT_MSG
+
+Update to v${NEW_VERSION}
 
 🤖 Generated with [Claude Code](https://claude.com/claude-code)
 
 Co-Authored-By: Claude <noreply@anthropic.com>"
+else
+    FULL_MSG="Update to v${NEW_VERSION}
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>"
+fi
+
+git commit -m "$FULL_MSG"
 
 # Create and push tag
 echo -e "${YELLOW}Creating tag v${NEW_VERSION}...${NC}"
